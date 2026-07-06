@@ -1,0 +1,20 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+.output/
+.tanstack/
+
+# env files — never commit real secrets
+.env
+.env.*
+!.env.example
+
+# editor/OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# logs
+*.log
