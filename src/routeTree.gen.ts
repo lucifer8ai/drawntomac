@@ -13,9 +13,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SongSlugRouteImport } from './routes/song.$slug'
 import { Route as ApiSearchRouteImport } from './routes/api/search'
-import { Route as ApiNewReleasesRouteImport } from './routes/api/new-releases'
 import { Route as ApiImportRouteImport } from './routes/api/import'
-import { Route as ApiCollageImagesRouteImport } from './routes/api/collage-images'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -37,19 +35,9 @@ const ApiSearchRoute = ApiSearchRouteImport.update({
   path: '/api/search',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiNewReleasesRoute = ApiNewReleasesRouteImport.update({
-  id: '/api/new-releases',
-  path: '/api/new-releases',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiImportRoute = ApiImportRouteImport.update({
   id: '/api/import',
   path: '/api/import',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiCollageImagesRoute = ApiCollageImagesRouteImport.update({
-  id: '/api/collage-images',
-  path: '/api/collage-images',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
@@ -61,18 +49,14 @@ const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/home': typeof AuthenticatedHomeRoute
-  '/api/collage-images': typeof ApiCollageImagesRoute
   '/api/import': typeof ApiImportRoute
-  '/api/new-releases': typeof ApiNewReleasesRoute
   '/api/search': typeof ApiSearchRoute
   '/song/$slug': typeof SongSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/home': typeof AuthenticatedHomeRoute
-  '/api/collage-images': typeof ApiCollageImagesRoute
   '/api/import': typeof ApiImportRoute
-  '/api/new-releases': typeof ApiNewReleasesRoute
   '/api/search': typeof ApiSearchRoute
   '/song/$slug': typeof SongSlugRoute
 }
@@ -81,39 +65,21 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_authenticated/home': typeof AuthenticatedHomeRoute
-  '/api/collage-images': typeof ApiCollageImagesRoute
   '/api/import': typeof ApiImportRoute
-  '/api/new-releases': typeof ApiNewReleasesRoute
   '/api/search': typeof ApiSearchRoute
   '/song/$slug': typeof SongSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/home'
-    | '/api/collage-images'
-    | '/api/import'
-    | '/api/new-releases'
-    | '/api/search'
-    | '/song/$slug'
+  fullPaths: '/' | '/home' | '/api/import' | '/api/search' | '/song/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/home'
-    | '/api/collage-images'
-    | '/api/import'
-    | '/api/new-releases'
-    | '/api/search'
-    | '/song/$slug'
+  to: '/' | '/home' | '/api/import' | '/api/search' | '/song/$slug'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/_authenticated/home'
-    | '/api/collage-images'
     | '/api/import'
-    | '/api/new-releases'
     | '/api/search'
     | '/song/$slug'
   fileRoutesById: FileRoutesById
@@ -121,9 +87,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  ApiCollageImagesRoute: typeof ApiCollageImagesRoute
   ApiImportRoute: typeof ApiImportRoute
-  ApiNewReleasesRoute: typeof ApiNewReleasesRoute
   ApiSearchRoute: typeof ApiSearchRoute
   SongSlugRoute: typeof SongSlugRoute
 }
@@ -158,25 +122,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/new-releases': {
-      id: '/api/new-releases'
-      path: '/api/new-releases'
-      fullPath: '/api/new-releases'
-      preLoaderRoute: typeof ApiNewReleasesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/import': {
       id: '/api/import'
       path: '/api/import'
       fullPath: '/api/import'
       preLoaderRoute: typeof ApiImportRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/collage-images': {
-      id: '/api/collage-images'
-      path: '/api/collage-images'
-      fullPath: '/api/collage-images'
-      preLoaderRoute: typeof ApiCollageImagesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/home': {
@@ -203,9 +153,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  ApiCollageImagesRoute: ApiCollageImagesRoute,
   ApiImportRoute: ApiImportRoute,
-  ApiNewReleasesRoute: ApiNewReleasesRoute,
   ApiSearchRoute: ApiSearchRoute,
   SongSlugRoute: SongSlugRoute,
 }

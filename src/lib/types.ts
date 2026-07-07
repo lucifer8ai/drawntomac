@@ -102,6 +102,13 @@ export type Database = {
             referencedRelation: "songs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "diary_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       dm_messages: {
@@ -292,6 +299,13 @@ export type Database = {
             referencedRelation: "diary_entries"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "review_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       review_likes: {
@@ -316,6 +330,13 @@ export type Database = {
             columns: ["entry_id"]
             isOneToOne: false
             referencedRelation: "diary_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -391,6 +412,15 @@ export type Database = {
           lim_window_sec?: number
         }
         Returns: boolean
+      }
+      get_song_avg_rating: {
+        Args: {
+          song_uuid: string
+        }
+        Returns: {
+          avg_rating: number | null
+          rating_count: number
+        }[]
       }
     }
     Enums: {
