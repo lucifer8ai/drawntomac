@@ -7,8 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
@@ -16,28 +14,31 @@ export type Database = {
     Tables: {
       artists: {
         Row: {
-          created_at: string
           id: string
-          image_url: string | null
           name: string
           slug: string
-          spotify_id: string | null
+          musicbrainz_id: string | null
+          genius_artist_id: string | null
+          image_url: string | null
+          created_at: string
         }
         Insert: {
-          created_at?: string
           id?: string
-          image_url?: string | null
           name: string
           slug: string
-          spotify_id?: string | null
+          musicbrainz_id?: string | null
+          genius_artist_id?: string | null
+          image_url?: string | null
+          created_at?: string
         }
         Update: {
-          created_at?: string
           id?: string
-          image_url?: string | null
           name?: string
           slug?: string
-          spotify_id?: string | null
+          musicbrainz_id?: string | null
+          genius_artist_id?: string | null
+          image_url?: string | null
+          created_at?: string
         }
         Relationships: []
       }
@@ -58,6 +59,50 @@ export type Database = {
           created_at?: string
         }
         Relationships: []
+      }
+      diary_entries: {
+        Row: {
+          id: string
+          user_id: string
+          song_id: string
+          type: "heard" | "want" | "rating" | "review"
+          listened_on: string | null
+          rating: number | null
+          body: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          song_id: string
+          type: "heard" | "want" | "rating" | "review"
+          listened_on?: string | null
+          rating?: number | null
+          body?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          song_id?: string
+          type?: "heard" | "want" | "rating" | "review"
+          listened_on?: string | null
+          rating?: number | null
+          body?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diary_entries_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dm_messages: {
         Row: {
@@ -133,73 +178,6 @@ export type Database = {
         }
         Relationships: []
       }
-      library_entries: {
-        Row: {
-          created_at: string
-          song_id: string
-          status: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          song_id: string
-          status: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          song_id?: string
-          status?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "library_entries_song_id_fkey"
-            columns: ["song_id"]
-            isOneToOne: false
-            referencedRelation: "songs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      listens: {
-        Row: {
-          created_at: string
-          id: string
-          listened_on: string
-          note: string | null
-          rating: number | null
-          song_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          listened_on?: string
-          note?: string | null
-          rating?: number | null
-          song_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          listened_on?: string
-          note?: string | null
-          rating?: number | null
-          song_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "listens_song_id_fkey"
-            columns: ["song_id"]
-            isOneToOne: false
-            referencedRelation: "songs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       notifications: {
         Row: {
           actor_id: string | null
@@ -266,138 +244,130 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          key: string
+          count: number
+          window_start: string
+        }
+        Insert: {
+          key: string
+          count?: number
+          window_start?: string
+        }
+        Update: {
+          key?: string
+          count?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
       review_comments: {
         Row: {
           body: string
           created_at: string
+          entry_id: string
           id: string
-          review_id: string
           user_id: string
         }
         Insert: {
           body: string
           created_at?: string
+          entry_id: string
           id?: string
-          review_id: string
           user_id: string
         }
         Update: {
           body?: string
           created_at?: string
+          entry_id?: string
           id?: string
-          review_id?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "review_comments_review_id_fkey"
-            columns: ["review_id"]
+            foreignKeyName: "review_comments_entry_id_fkey"
+            columns: ["entry_id"]
             isOneToOne: false
-            referencedRelation: "reviews"
+            referencedRelation: "diary_entries"
             referencedColumns: ["id"]
           },
         ]
       }
       review_likes: {
         Row: {
-          created_at: string
-          review_id: string
+          entry_id: string
           user_id: string
+          created_at: string
         }
         Insert: {
-          created_at?: string
-          review_id: string
+          entry_id: string
           user_id: string
+          created_at?: string
         }
         Update: {
-          created_at?: string
-          review_id?: string
+          entry_id?: string
           user_id?: string
+          created_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "review_likes_review_id_fkey"
-            columns: ["review_id"]
+            foreignKeyName: "review_likes_entry_id_fkey"
+            columns: ["entry_id"]
             isOneToOne: false
-            referencedRelation: "reviews"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      reviews: {
-        Row: {
-          body: string | null
-          created_at: string
-          id: string
-          rating: number
-          song_id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          body?: string | null
-          created_at?: string
-          id?: string
-          rating: number
-          song_id: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          body?: string | null
-          created_at?: string
-          id?: string
-          rating?: number
-          song_id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reviews_song_id_fkey"
-            columns: ["song_id"]
-            isOneToOne: false
-            referencedRelation: "songs"
+            referencedRelation: "diary_entries"
             referencedColumns: ["id"]
           },
         ]
       }
       songs: {
         Row: {
-          artist_id: string | null
-          cover_url: string | null
-          created_at: string
           id: string
-          preview_url: string | null
-          release_date: string | null
-          slug: string
-          spotify_id: string | null
-          spotify_url: string | null
           title: string
+          slug: string
+          artist_id: string | null
+          musicbrainz_id: string | null
+          genius_song_id: string | null
+          genius_thumbnail_url: string | null
+          preview_url: string | null
+          genre_tags: string[] | null
+          credits: Json | null
+          release_group_mbid: string | null
+          country: string | null
+          release_date: string | null
+          created_at: string
         }
         Insert: {
-          artist_id?: string | null
-          cover_url?: string | null
-          created_at?: string
           id?: string
-          preview_url?: string | null
-          release_date?: string | null
-          slug: string
-          spotify_id?: string | null
-          spotify_url?: string | null
           title: string
+          slug: string
+          artist_id?: string | null
+          musicbrainz_id?: string | null
+          genius_song_id?: string | null
+          genius_thumbnail_url?: string | null
+          preview_url?: string | null
+          genre_tags?: string[] | null
+          credits?: Json | null
+          release_group_mbid?: string | null
+          country?: string | null
+          release_date?: string | null
+          created_at?: string
         }
         Update: {
-          artist_id?: string | null
-          cover_url?: string | null
-          created_at?: string
           id?: string
-          preview_url?: string | null
-          release_date?: string | null
-          slug?: string
-          spotify_id?: string | null
-          spotify_url?: string | null
           title?: string
+          slug?: string
+          artist_id?: string | null
+          musicbrainz_id?: string | null
+          genius_song_id?: string | null
+          genius_thumbnail_url?: string | null
+          preview_url?: string | null
+          genre_tags?: string[] | null
+          credits?: Json | null
+          release_group_mbid?: string | null
+          country?: string | null
+          release_date?: string | null
+          created_at?: string
         }
         Relationships: [
           {
@@ -409,30 +379,19 @@ export type Database = {
           },
         ]
       }
-      spotify_token_cache: {
-        Row: {
-          access_token: string
-          expires_at: number
-          id: string
-        }
-        Insert: {
-          access_token: string
-          expires_at: number
-          id: string
-        }
-        Update: {
-          access_token?: string
-          expires_at?: number
-          id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_rate_limit: {
+        Args: {
+          lim_key: string
+          lim_limit?: number
+          lim_window_sec?: number
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

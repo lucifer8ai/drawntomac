@@ -1,45 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+import { getRecordingByMbid } from "@/lib/musicbrainz";
+import { getCoverArt } from "@/lib/coverartarchive";
+import { searchGeniusArtwork } from "@/lib/genius";
+import { generateSlug, slugifyBase } from "@/lib/slugify";
 
-function slugifyBase(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]+/g, "")
-    .replace(/-+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
-
-function slugifySong(title: string, id: string): string {
-  return `${slugifyBase(title)}-${id.slice(-6)}`;
-}
-
-const trackSchema = z.object({
-  type: z.literal("track"),
-  itunesId: z.string(),
-  title: z.string(),
-  artistName: z.string(),
-  artistItunesId: z.string().nullable().optional(),
-  coverUrl: z.string().nullable().optional(),
-  previewUrl: z.string().nullable().optional(),
-  itunesUrl: z.string().nullable().optional(),
+const bodySchema = z.object({
+  mbid: z.string().min(1),
+  title: z.string().min(1),
+  artistName: z.string().min(1),
+  artistMbid: z.string().nullable().optional(),
+  releaseGroupMbid: z.string().nullable().optional(),
   releaseDate: z.string().nullable().optional(),
-  slug: z.string().optional(),
 });
-
-const albumSchema = z.object({
-  type: z.literal("album"),
-  itunesId: z.string(),
-  title: z.string(),
-  artistName: z.string(),
-  artistItunesId: z.string().nullable().optional(),
-  coverUrl: z.string().nullable().optional(),
-  itunesUrl: z.string().nullable().optional(),
-  releaseDate: z.string().nullable().optional(),
-  slug: z.string().optional(),
-});
-
-const bodySchema = z.discriminatedUnion("type", [trackSchema, albumSchema]);
 
 export const Route = createFileRoute("/api/import")({
   server: {
@@ -59,45 +32,95 @@ export const Route = createFileRoute("/api/import")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        let artistId: string | null = null;
-        if (body.artistItunesId) {
-          const { data: artist, error: artistErr } = await supabaseAdmin
-            .from("artists")
-            .upsert(
-              {
-                name: body.artistName,
-                slug: slugifyBase(body.artistName).slice(0, 80) || body.artistItunesId,
-                itunes_id: body.artistItunesId,
-              },
-              { onConflict: "itunes_id" },
-            )
-            .select("id")
-            .single();
-          if (artistErr) {
-            console.error("[itunes import] artist upsert", artistErr);
-            return Response.json({ error: artistErr.message }, { status: 500 });
-          }
-          artistId = artist?.id ?? null;
+        // Check if song already exists
+        const { data: existing } = await supabaseAdmin
+          .from("songs")
+          .select("slug")
+          .eq("musicbrainz_id", body.mbid)
+          .maybeSingle();
+
+        if (existing) {
+          return Response.json({ slug: existing.slug, cached: true });
         }
 
-        const slug = body.slug ?? slugifySong(body.title, body.itunesId);
+        // Fetch full metadata from MusicBrainz for richer data
+        const recording = await getRecordingByMbid(body.mbid);
+
+        // Determine artist slug + id
+        const artistSlug = slugifyBase(body.artistName).slice(0, 80) || body.mbid;
+        const { data: artist, error: artistErr } = await supabaseAdmin
+          .from("artists")
+          .upsert(
+            {
+              name: body.artistName,
+              slug: artistSlug,
+              musicbrainz_id: body.artistMbid ?? null,
+            },
+            { onConflict: "musicbrainz_id" },
+          )
+          .select("id")
+          .single();
+
+        if (artistErr && artistErr.code !== "23505") {
+          console.error("[import] artist upsert", artistErr);
+          return Response.json({ error: artistErr.message }, { status: 500 });
+        }
+
+        // If upsert returned empty due to conflict, re-fetch
+        let artistId = artist?.id ?? null;
+        if (!artistId && body.artistMbid) {
+          const { data: refetched } = await supabaseAdmin
+            .from("artists")
+            .select("id")
+            .eq("musicbrainz_id", body.artistMbid)
+            .single();
+          artistId = refetched?.id ?? null;
+        }
+
+        // Cover art: CAA primary, Genius fallback
+        let coverUrl: string | null = null;
+        let geniusSongId: string | null = null;
+        let geniusArtistId: string | null = null;
+
+        const rgMbid = recording?.releaseGroupMbid ?? body.releaseGroupMbid ?? null;
+        if (rgMbid) {
+          coverUrl = await getCoverArt(rgMbid);
+        }
+
+        if (!coverUrl) {
+          const genius = await searchGeniusArtwork(body.artistName, body.title);
+          coverUrl = genius.thumbnailUrl;
+          geniusSongId = genius.geniusSongId;
+          geniusArtistId = genius.geniusArtistId;
+        }
+
+        // Generate slug
+        const slug = generateSlug(body.title);
+        const releaseGroupMbid = recording?.releaseGroupMbid ?? body.releaseGroupMbid ?? null;
+        const releaseDate = recording?.releaseDate ?? body.releaseDate ?? null;
+        const country = recording?.country ?? null;
+        const tags = recording?.tags ?? [];
 
         const songRow = {
           title: body.title,
           slug,
-          itunes_id: body.itunesId,
+          musicbrainz_id: body.mbid,
           artist_id: artistId,
-          cover_url: body.coverUrl ?? null,
-          preview_url: body.type === "track" ? (body.previewUrl ?? null) : null,
-          itunes_url: body.itunesUrl ?? null,
-          release_date: body.releaseDate ?? null,
+          genius_thumbnail_url: coverUrl,
+          genius_song_id: geniusSongId,
+          genre_tags: tags,
+          credits: null,
+          release_group_mbid: releaseGroupMbid,
+          country,
+          release_date: releaseDate,
         };
 
         const { error: songErr } = await supabaseAdmin
           .from("songs")
-          .upsert(songRow, { onConflict: "itunes_id" });
+          .upsert(songRow, { onConflict: "musicbrainz_id" });
+
         if (songErr) {
-          console.error("[itunes import] song upsert", songErr);
+          console.error("[import] song upsert", songErr);
           return Response.json({ error: songErr.message }, { status: 500 });
         }
 

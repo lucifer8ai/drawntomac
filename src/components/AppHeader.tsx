@@ -6,15 +6,12 @@ import { supabase } from "@/integrations/supabase/client";
 type Tab = "feed" | "diary" | "discover";
 
 type SearchHit = {
-  spotifyId: string;
+  mbid: string;
   title: string;
   artistName: string;
-  artistSpotifyId: string | null;
-  coverUrl: string | null;
-  previewUrl: string | null;
-  spotifyUrl: string | null;
+  artistMbid: string | null;
+  releaseGroupMbid: string | null;
   releaseDate: string | null;
-  slug: string;
 };
 
 export function AppHeader({
@@ -46,7 +43,7 @@ export function AppHeader({
     setLoading(true);
     const t = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/spotify/search?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
         const json = (await res.json()) as SearchHit[];
         if (!cancelled) {
           setHits(Array.isArray(json) ? json : []);
@@ -76,15 +73,15 @@ export function AppHeader({
     setOpen(false);
     setQ("");
     try {
-      const res = await fetch("/api/spotify/import", {
+      const res = await fetch("/api/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "track", ...hit }),
+        body: JSON.stringify(hit),
       });
       if (!res.ok) return;
       const { slug } = (await res.json()) as { slug: string };
       navigate({ to: "/song/$slug" as never, params: { slug } as never }).catch(() => {
-        window.location.href = `/songs/${slug}`;
+        window.location.href = `/song/${slug}`;
       });
     } catch {
       // swallow
@@ -101,8 +98,8 @@ export function AppHeader({
     <header
       className="sticky top-0 z-40 w-full border-b"
       style={{
-        backgroundColor: "rgba(13,10,6,0.95)",
-        borderColor: "#2A2028",
+        backgroundColor: "rgba(0,0,0,0.95)",
+        borderColor: "rgba(245,240,232,0.08)",
         backdropFilter: "blur(12px)",
       }}
     >
@@ -114,7 +111,7 @@ export function AppHeader({
         <div ref={boxRef} className="relative mx-2 flex-1 max-w-xl">
           <div
             className="flex items-center gap-2 rounded-full px-4 py-2"
-            style={{ backgroundColor: "#1A1510", border: "1px solid #2A2028" }}
+            style={{ backgroundColor: "rgba(245,240,232,0.05)", border: "1px solid rgba(245,240,232,0.12)" }}
           >
             <Search size={16} className="text-white/50" />
             <input
@@ -128,7 +125,7 @@ export function AppHeader({
           {open && (
             <div
               className="absolute left-0 right-0 top-full z-[9999] mt-2 max-h-[320px] overflow-y-auto rounded-2xl p-2 shadow-2xl"
-              style={{ backgroundColor: "#1A1510", border: "1px solid #2A2028" }}
+              style={{ backgroundColor: "rgba(20,18,15,0.98)", border: "1px solid rgba(245,240,232,0.08)" }}
             >
               {loading && <div className="p-3 text-xs text-white/50">Searching…</div>}
               {!loading && hits.length === 0 && (
@@ -136,24 +133,16 @@ export function AppHeader({
               )}
               {hits.map((h) => (
                 <button
-                  key={h.spotifyId}
+                  key={h.mbid}
                   onClick={() => pickSong(h)}
                   className="flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-white/5"
                 >
-                  {h.coverUrl ? (
-                    <img
-                      src={h.coverUrl}
-                      alt=""
-                      width={40}
-                      height={40}
-                      className="h-10 w-10 rounded object-cover"
-                    />
-                  ) : (
-                    <div className="h-10 w-10 rounded bg-white/10" />
-                  )}
+                  <div className="h-10 w-10 rounded bg-white/10 flex items-center justify-center text-white/40 text-xs">
+                    ♫
+                  </div>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-semibold text-white">{h.title}</div>
-                    <div className="truncate text-xs" style={{ color: "#8A7A6A" }}>
+                    <div className="truncate text-xs" style={{ color: "#8A8276" }}>
                       {h.artistName}
                     </div>
                   </div>
@@ -167,12 +156,12 @@ export function AppHeader({
           type="button"
           aria-label="Notifications"
           className="relative flex h-9 w-9 items-center justify-center rounded-full"
-          style={{ backgroundColor: "#E8624A", color: "white" }}
+          style={{ backgroundColor: "#D4556A", color: "white" }}
         >
           <Bell size={16} />
           <span
             className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full"
-            style={{ backgroundColor: "#E07B6A", border: "2px solid #0D0A06" }}
+            style={{ backgroundColor: "#E07B6A", border: "2px solid #000000" }}
           />
         </button>
 
@@ -202,13 +191,13 @@ export function AppHeader({
               key={t.id}
               onClick={() => onTabChange(t.id)}
               className="relative py-3 text-sm font-semibold transition-colors"
-              style={{ color: active ? "#E8624A" : "rgba(255,255,255,0.6)" }}
+              style={{ color: active ? "#D4556A" : "rgba(255,255,255,0.6)" }}
             >
               {t.label}
               {active && (
                 <span
                   className="absolute -bottom-px left-0 right-0 h-0.5"
-                  style={{ backgroundColor: "#E8624A" }}
+                  style={{ backgroundColor: "#D4556A" }}
                 />
               )}
             </button>
