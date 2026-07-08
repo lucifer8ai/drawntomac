@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import { BookmarkPlus, BookmarkCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToggleDiaryEntry } from "@/hooks/useToggleDiaryEntry";
 import type { Tables } from "@/lib/types";
 
 type DiaryEntry = Tables<"diary_entries">;
@@ -16,38 +17,43 @@ export function HeardButton({
   entries: DiaryEntry[];
   onUpdate: () => void;
 }) {
-  const count = entries.length;
   const today = new Date().toISOString().slice(0, 10);
-  const heardToday = entries.some((e) => e.created_at?.slice(0, 10) === today);
+  const todayEntry = entries.find((e) => e.listened_on === today);
+  const olderCount = entries.filter((e) => e.listened_on !== today).length;
 
-  async function handle() {
+  async function toggle() {
     if (!userId) return toast.error("Sign in to log listens.");
-    const { error } = await supabase.from("diary_entries").insert({
-      user_id: userId,
-      song_id: songId,
-      type: "heard" as const,
-      listened_on: today,
-    });
-    if (error) {
-      toast.error(error.message);
-      return;
+    if (todayEntry) {
+      await supabase.from("diary_entries").delete().eq("id", todayEntry.id);
+    } else {
+      const { error } = await supabase.from("diary_entries").insert({
+        user_id: userId,
+        song_id: songId,
+        type: "heard" as const,
+        listened_on: today,
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
     }
-    toast.success("Logged your listen.");
     onUpdate();
   }
 
+  const totalCount = olderCount + (todayEntry ? 1 : 0);
+
   return (
     <button
-      onClick={handle}
+      onClick={toggle}
       className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors"
       style={{
-        backgroundColor: heardToday ? "#4A9E6E" : "#000000",
+        backgroundColor: todayEntry ? "#4A9E6E" : "#000000",
         border: "1px solid rgba(245,240,232,0.08)",
-        color: heardToday ? "#000000" : "white",
+        color: todayEntry ? "#000000" : "white",
       }}
     >
-      {heardToday ? <BookmarkCheck size={14} /> : <BookmarkPlus size={14} />}
-      Heard{count > 1 ? ` (${count})` : ""}
+      {todayEntry ? <BookmarkCheck size={14} /> : <BookmarkPlus size={14} />}
+      Heard{totalCount > 1 ? ` (${totalCount})` : ""}
     </button>
   );
 }
@@ -63,30 +69,18 @@ export function WantButton({
   entry: DiaryEntry | null;
   onUpdate: () => void;
 }) {
-  async function toggle() {
-    if (!userId) return toast.error("Sign in to save songs.");
-    if (entry) {
-      await supabase.from("diary_entries").delete().eq("id", entry.id);
-      toast.success("Removed from Want to hear.");
-    } else {
-      const { error } = await supabase.from("diary_entries").insert({
-        user_id: userId,
-        song_id: songId,
-        type: "want" as const,
-      });
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-      toast.success("Added to Want to hear.");
-    }
+  const { toggle, loading } = useToggleDiaryEntry(songId, userId, "want", entry);
+
+  async function handleClick() {
+    await toggle();
     onUpdate();
   }
 
   return (
     <button
-      onClick={toggle}
-      className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors"
+      onClick={handleClick}
+      disabled={loading}
+      className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
       style={{
         backgroundColor: entry ? "#9D8EC4" : "#000000",
         border: "1px solid rgba(245,240,232,0.08)",

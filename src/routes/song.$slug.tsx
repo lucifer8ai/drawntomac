@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/lib/types";
@@ -8,7 +9,7 @@ import {
   SongHeader,
   HeardButton,
   WantButton,
-  StarRating,
+  LikeDislike,
   ReviewComposer,
   ReviewPrompt,
   ReviewList,
@@ -21,11 +22,9 @@ const REVIEWS_PER_PAGE = 10;
 type SongWithArtist = Tables<"songs"> & { artist: Tables<"artists"> | null };
 type DiaryEntry = Tables<"diary_entries">;
 type Profile = Pick<Tables<"profiles">, "username" | "display_name" | "avatar_url">;
-type AvgRating = { avg_rating: number | null; rating_count: number };
 
 type LoaderData = {
   song: SongWithArtist;
-  avgRating: AvgRating;
 };
 
 export const Route = createFileRoute("/song/$slug")({
@@ -54,12 +53,8 @@ export const Route = createFileRoute("/song/$slug")({
     if (error) throw error;
     if (!song) throw notFound();
 
-    const { data: avgData } = await supabase
-      .rpc("get_song_avg_rating", { song_uuid: song.id });
-
     return {
       song: song as unknown as SongWithArtist,
-      avgRating: (avgData?.[0] ?? { avg_rating: null, rating_count: 0 }) as AvgRating,
     };
   },
   component: SongPage,
@@ -92,8 +87,9 @@ function Shell({ children }: { children: React.ReactNode }) {
           <Link to="/home" className="text-2xl font-black tracking-tight text-white">
             #d.To
           </Link>
-          <Link to="/" className="text-xs font-semibold" style={{ color: "#D4556A" }}>
-            Sign in
+          <Link to="/home" className="flex items-center gap-1 text-xs font-semibold" style={{ color: "#8A8276" }}>
+            <ArrowLeft size={16} />
+            Back
           </Link>
         </div>
       </header>
@@ -103,7 +99,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 function SongPage() {
-  const { song, avgRating } = Route.useLoaderData() as LoaderData;
+  const { song } = Route.useLoaderData() as LoaderData;
 
   const [userId, setUserId] = useState<string | null>(null);
   const [reviews, setReviews] = useState<ReviewEntry[]>([]);
@@ -113,9 +109,10 @@ function SongPage() {
   const [myEntries, setMyEntries] = useState<{
     heard: DiaryEntry[];
     want: DiaryEntry | null;
-    rating: DiaryEntry | null;
+    like: DiaryEntry | null;
+    dislike: DiaryEntry | null;
     review: DiaryEntry | null;
-  }>({ heard: [], want: null, rating: null, review: null });
+  }>({ heard: [], want: null, like: null, dislike: null, review: null });
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
@@ -179,7 +176,7 @@ function SongPage() {
 
   const loadMyEntries = useCallback(async () => {
     if (!userId) {
-      setMyEntries({ heard: [], want: null, rating: null, review: null });
+      setMyEntries({ heard: [], want: null, like: null, dislike: null, review: null });
       return;
     }
     const { data } = await supabase
@@ -191,7 +188,8 @@ function SongPage() {
 
     const heard: DiaryEntry[] = [];
     let want: DiaryEntry | null = null;
-    let rating: DiaryEntry | null = null;
+    let like: DiaryEntry | null = null;
+    let dislike: DiaryEntry | null = null;
     let review: DiaryEntry | null = null;
 
     (data ?? []).forEach((e) => {
@@ -199,12 +197,13 @@ function SongPage() {
       switch (entry.type) {
         case "heard": heard.push(entry); break;
         case "want": want = entry; break;
-        case "rating": rating = entry; break;
+        case "like": like = entry; break;
+        case "dislike": dislike = entry; break;
         case "review": review = entry; break;
       }
     });
 
-    setMyEntries({ heard, want, rating, review });
+    setMyEntries({ heard, want, like, dislike, review });
   }, [userId, song.id]);
 
   useEffect(() => {
@@ -250,8 +249,9 @@ function SongPage() {
                 preview_url: song.preview_url,
                 artist: song.artist,
               }}
-              rating={avgRating}
             />
+
+            {!userId && <ReviewPrompt />}
 
             <div className="mt-5 flex flex-wrap gap-2">
               <HeardButton
@@ -268,27 +268,31 @@ function SongPage() {
               />
             </div>
 
-            {userId ? (
-              <StarRating
-                songId={song.id}
-                userId={userId}
-                entry={myEntries.rating}
-                onUpdate={loadMyEntries}
-              />
-            ) : null}
+            {userId && myEntries.heard.length > 0 && (
+              <>
+                <LikeDislike
+                  songId={song.id}
+                  userId={userId}
+                  likeEntry={myEntries.like}
+                  dislikeEntry={myEntries.dislike}
+                  onUpdate={loadMyEntries}
+                />
+                <ReviewComposer
+                  songId={song.id}
+                  userId={userId}
+                  entry={myEntries.review}
+                  onPosted={() => {
+                    void loadReviews();
+                    void loadMyEntries();
+                  }}
+                />
+              </>
+            )}
 
-            {userId ? (
-              <ReviewComposer
-                songId={song.id}
-                userId={userId}
-                entry={myEntries.review}
-                onPosted={() => {
-                  void loadReviews();
-                  void loadMyEntries();
-                }}
-              />
-            ) : (
-              <ReviewPrompt />
+            {userId && myEntries.heard.length === 0 && (
+              <p className="mt-4 text-sm" style={{ color: "#8A8276" }}>
+                Log a listen to like, dislike, or review this song.
+              </p>
             )}
           </div>
         </div>

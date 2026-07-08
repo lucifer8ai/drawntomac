@@ -6,9 +6,7 @@ type SongInfo =
   | Pick<SongWithArtist, "title" | "release_date" | "country" | "genre_tags" | "preview_url">
   & { artist: Pick<Tables<"artists">, "name" | "slug"> | null };
 
-type AvgRating = { avg_rating: number | null; rating_count: number };
-
-export function SongHeader({ song, rating }: { song: SongInfo; rating: AvgRating }) {
+export function SongHeader({ song }: { song: SongInfo }) {
   return (
     <div>
       <h1 className="text-4xl font-black leading-tight tracking-tight text-white">
@@ -17,13 +15,6 @@ export function SongHeader({ song, rating }: { song: SongInfo; rating: AvgRating
       <p className="mt-1 text-lg" style={{ color: "#E07B6A" }}>
         {song.artist?.name ?? "Unknown artist"}
       </p>
-
-      {rating.rating_count > 0 && (
-        <p className="mt-1 text-sm" style={{ color: "#8A8276" }}>
-          {rating.avg_rating?.toFixed(1)} ★ · {rating.rating_count}{" "}
-          {rating.rating_count === 1 ? "rating" : "ratings"}
-        </p>
-      )}
 
       {song.release_date && (
         <p className="mt-1 text-xs uppercase tracking-wider" style={{ color: "#8A8276" }}>

@@ -20,6 +20,7 @@ export type Database = {
           musicbrainz_id: string | null
           genius_artist_id: string | null
           image_url: string | null
+          artist_countries: string[]
           created_at: string
         }
         Insert: {
@@ -29,6 +30,7 @@ export type Database = {
           musicbrainz_id?: string | null
           genius_artist_id?: string | null
           image_url?: string | null
+          artist_countries?: string[]
           created_at?: string
         }
         Update: {
@@ -38,6 +40,7 @@ export type Database = {
           musicbrainz_id?: string | null
           genius_artist_id?: string | null
           image_url?: string | null
+          artist_countries?: string[]
           created_at?: string
         }
         Relationships: []
@@ -65,9 +68,8 @@ export type Database = {
           id: string
           user_id: string
           song_id: string
-          type: "heard" | "want" | "rating" | "review"
+          type: "heard" | "want" | "like" | "dislike" | "review"
           listened_on: string | null
-          rating: number | null
           body: string | null
           created_at: string
           updated_at: string
@@ -76,9 +78,8 @@ export type Database = {
           id?: string
           user_id: string
           song_id: string
-          type: "heard" | "want" | "rating" | "review"
+          type: "heard" | "want" | "like" | "dislike" | "review"
           listened_on?: string | null
-          rating?: number | null
           body?: string | null
           created_at?: string
           updated_at?: string
@@ -87,9 +88,8 @@ export type Database = {
           id?: string
           user_id?: string
           song_id?: string
-          type?: "heard" | "want" | "rating" | "review"
+          type?: "heard" | "want" | "like" | "dislike" | "review"
           listened_on?: string | null
-          rating?: number | null
           body?: string | null
           created_at?: string
           updated_at?: string
@@ -413,13 +413,13 @@ export type Database = {
         }
         Returns: boolean
       }
-      get_song_avg_rating: {
+      get_song_like_counts: {
         Args: {
           song_uuid: string
         }
         Returns: {
-          avg_rating: number | null
-          rating_count: number
+          like_count: number
+          dislike_count: number
         }[]
       }
     }
