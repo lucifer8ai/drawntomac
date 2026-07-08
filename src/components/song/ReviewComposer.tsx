@@ -25,11 +25,9 @@ export function ReviewComposer({
 
   useEffect(() => {
     setBody(entry?.body ?? "");
-    // Reset posted-tracking when parent signals via entry prop change
     if (entry) setPostedEntryId(entry.id);
   }, [entry?.id]);
 
-  // Optimistic: treat as editing if we know we just posted, even before parent refetch
   const hasEntry = !!entry || !!postedEntryId;
   const currentEntry = entry ?? { id: postedEntryId!, created_at: new Date().toISOString(), body } as DiaryEntry;
   const canEdit = hasEntry
@@ -38,12 +36,24 @@ export function ReviewComposer({
 
   async function submit() {
     setSubmitting(true);
-    if (hasEntry) {
+
+    // Query DB for existing review — never trust the stale prop
+    const { data: dbEntry } = await supabase
+      .from("diary_entries")
+      .select("id, created_at")
+      .eq("user_id", userId)
+      .eq("song_id", songId)
+      .eq("type", "review")
+      .maybeSingle();
+
+    const targetId = entry?.id ?? postedEntryId ?? dbEntry?.id;
+    const isUpdate = !!targetId;
+
+    if (isUpdate) {
       if (!canEdit) {
         setSubmitting(false);
         return toast.error("Reviews can only be edited within 48 hours.");
       }
-      const targetId = entry?.id ?? postedEntryId!;
       const { error } = await supabase
         .from("diary_entries")
         .update({ body: body.trim() || null })
@@ -59,7 +69,6 @@ export function ReviewComposer({
       }).select("id").single();
       setSubmitting(false);
       if (error) return toast.error(error.message);
-      // Immediately enter edit mode to prevent double-insert before parent refetch
       if (data) setPostedEntryId(data.id);
     }
     setBody("");

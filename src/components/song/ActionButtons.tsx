@@ -69,7 +69,7 @@ export function WantButton({
   entry: DiaryEntry | null;
   onUpdate: () => void;
 }) {
-  const { toggle, loading } = useToggleDiaryEntry(songId, userId, "want", entry);
+  const { toggle, loading } = useToggleDiaryEntry(songId, userId, "want");
 
   async function handleClick() {
     await toggle();
