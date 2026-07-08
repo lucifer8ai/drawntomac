@@ -228,6 +228,11 @@ function SongPage() {
   }
 
   const totalPages = Math.max(1, Math.ceil(totalReviewCount / REVIEWS_PER_PAGE));
+  const totalEntries = myEntries.heard.length
+    + (myEntries.want ? 1 : 0)
+    + (myEntries.like ? 1 : 0)
+    + (myEntries.dislike ? 1 : 0)
+    + (myEntries.review ? 1 : 0);
 
   return (
     <Shell>
@@ -258,14 +263,17 @@ function SongPage() {
                 songId={song.id}
                 userId={userId}
                 entries={myEntries.heard}
+                wantEntry={myEntries.want}
                 onUpdate={loadMyEntries}
               />
-              <WantButton
-                songId={song.id}
-                userId={userId}
-                entry={myEntries.want}
-                onUpdate={loadMyEntries}
-              />
+              {totalEntries === 0 && (
+                <WantButton
+                  songId={song.id}
+                  userId={userId}
+                  entry={myEntries.want}
+                  onUpdate={loadMyEntries}
+                />
+              )}
             </div>
 
             {userId && myEntries.heard.length > 0 && (

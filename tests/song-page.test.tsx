@@ -139,4 +139,34 @@ describe("song page logic", () => {
       expect(heardToday([])).toBe(false);
     });
   });
+
+  describe("want-to-hear visibility", () => {
+    function wantVisible(entries: Array<{ type: string; listened_on?: string }>): boolean {
+      return entries.length === 0;
+    }
+
+    it("visible when no entries exist", () => {
+      expect(wantVisible([])).toBe(true);
+    });
+
+    it("hidden after heard is logged", () => {
+      expect(wantVisible([{ type: "heard", listened_on: "2026-01-01" }])).toBe(false);
+    });
+
+    it("hidden when a review exists", () => {
+      expect(wantVisible([{ type: "review" }])).toBe(false);
+    });
+
+    it("hidden when like exists", () => {
+      expect(wantVisible([{ type: "like" }])).toBe(false);
+    });
+
+    it("hidden when want + heard both exist (shouldn't happen but tests the logic)", () => {
+      expect(wantVisible([{ type: "want" }, { type: "heard" }])).toBe(false);
+    });
+
+    it("visible after unhearing if no other entries remain", () => {
+      expect(wantVisible([])).toBe(true);
+    });
+  });
 });

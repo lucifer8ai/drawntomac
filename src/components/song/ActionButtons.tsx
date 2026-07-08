@@ -10,11 +10,13 @@ export function HeardButton({
   songId,
   userId,
   entries,
+  wantEntry,
   onUpdate,
 }: {
   songId: string;
   userId: string | null;
   entries: DiaryEntry[];
+  wantEntry: DiaryEntry | null;
   onUpdate: () => void;
 }) {
   const today = new Date().toISOString().slice(0, 10);
@@ -26,6 +28,10 @@ export function HeardButton({
     if (todayEntry) {
       await supabase.from("diary_entries").delete().eq("id", todayEntry.id);
     } else {
+      // Auto-delete Want when marking as heard (you can't both want + have heard)
+      if (wantEntry) {
+        await supabase.from("diary_entries").delete().eq("id", wantEntry.id);
+      }
       const { error } = await supabase.from("diary_entries").insert({
         user_id: userId,
         song_id: songId,
