@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { getRecordingByMbid, type ParsedMusicBrainzResult, isArtistInAllowedArea, ALLOWED_COUNTRIES } from "@/lib/musicbrainz";
+import { getRecordingByMbid, type ParsedMusicBrainzResult, isArtistInAllowedArea, ALLOWED_COUNTRIES, ALLOWED_ARTISTS } from "@/lib/musicbrainz";
 import { searchGeniusArtwork } from "@/lib/genius";
 import { generateSlug, slugifyBase } from "@/lib/slugify";
 
@@ -69,10 +69,18 @@ export const Route = createFileRoute("/api/import")({
         const geniusSongId = genius.geniusSongId;
         const geniusArtistId = genius.geniusArtistId;
 
-        // Artist area check: if release country not in allowed set, check artist area
+        // Artist area check: if release country not in allowed set, check artist area.
+        // Bypass the check for artists in the explicit allowlist (e.g. artists whose
+        // releases have no country set but are known to be from allowed areas).
         const releaseCountry = recording?.country ?? null;
-        if (!releaseCountry || !ALLOWED_COUNTRIES.includes(releaseCountry.toUpperCase())) {
-          if (body.artistMbid) {
+        const artistNameCheck = body.primaryArtistName || body.artistName;
+        if (
+          !releaseCountry || !ALLOWED_COUNTRIES.includes(releaseCountry.toUpperCase())
+        ) {
+          const isAllowedArtist = ALLOWED_ARTISTS.some(
+            (a) => artistNameCheck.toLowerCase() === a.toLowerCase(),
+          );
+          if (!isAllowedArtist && body.artistMbid) {
             const allowed = await isArtistInAllowedArea(body.artistMbid);
             if (!allowed) {
               return Response.json(

@@ -1,6 +1,7 @@
 const MUSICBRAINZ_BASE = "https://musicbrainz.org/ws/2";
 const USER_AGENT = "drawnto/1.0 (drawnTo.fm)";
 export const ALLOWED_COUNTRIES = ["IN", "US", "GB", "AU", "CA", "XW"];
+export const ALLOWED_ARTISTS = ["Anuv Jain"];
 
 export interface MusicBrainzArtist {
   id: string;
@@ -247,9 +248,7 @@ export async function isArtistInAllowedArea(artistMbid: string | null): Promise<
 
     return countries.some((c) => ALLOWED_COUNTRIES.includes(c.toUpperCase()));
   } catch {
-    // Fail open: if we can't verify the artist's area, don't block the import.
-    // The recording already passed post-filtering (no country = allowed, or country is in whitelist).
-    return true;
+    return false;
   }
 }
 
