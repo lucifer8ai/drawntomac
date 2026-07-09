@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Bell, Search } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 type Tab = "feed" | "diary" | "discover";
@@ -9,9 +10,11 @@ type SearchHit = {
   mbid: string;
   title: string;
   artistName: string;
+  primaryArtistName: string;
   artistMbid: string | null;
   releaseGroupMbid: string | null;
   releaseDate: string | null;
+  thumbnailUrl: string | null;
 };
 
 export function AppHeader({
@@ -41,9 +44,23 @@ export function AppHeader({
     }
     let cancelled = false;
     setLoading(true);
+
+    // Parse "song/artist" format for precise search
+    let searchQ = query;
+    let artistParam = "";
+    const slashIdx = query.indexOf("/");
+    if (slashIdx > 0 && slashIdx < query.length - 1) {
+      searchQ = query.substring(0, slashIdx).trim();
+      artistParam = query.substring(slashIdx + 1).trim();
+    }
+
     const t = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const url = `/api/search?q=${encodeURIComponent(searchQ)}`;
+        const finalUrl = artistParam
+          ? `${url}&artist=${encodeURIComponent(artistParam)}`
+          : url;
+        const res = await fetch(finalUrl);
         const json = (await res.json()) as SearchHit[];
         if (!cancelled) {
           setHits(Array.isArray(json) ? json : []);
@@ -78,13 +95,21 @@ export function AppHeader({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(hit),
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        let message = "Import failed.";
+        try {
+          const { error } = (await res.json()) as { error?: string };
+          if (error) message = error;
+        } catch {}
+        toast.error(message);
+        return;
+      }
       const { slug } = (await res.json()) as { slug: string };
       navigate({ to: "/song/$slug" as never, params: { slug } as never }).catch(() => {
         window.location.href = `/song/${slug}`;
       });
     } catch {
-      // swallow
+      toast.error("Something went wrong. Try again.");
     }
   }
 
@@ -118,7 +143,7 @@ export function AppHeader({
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onFocus={() => hits.length > 0 && setOpen(true)}
-              placeholder="Search music"
+              placeholder="Search song or song/artist"
               className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/40"
             />
           </div>
@@ -137,9 +162,18 @@ export function AppHeader({
                   onClick={() => pickSong(h)}
                   className="flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-white/5"
                 >
-                  <div className="h-10 w-10 rounded bg-white/10 flex items-center justify-center text-white/40 text-xs">
-                    ♫
-                  </div>
+                  {h.thumbnailUrl ? (
+                    <img
+                      src={h.thumbnailUrl}
+                      alt=""
+                      className="h-10 w-10 rounded object-cover flex-shrink-0"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded bg-white/10 flex items-center justify-center text-white/40 text-xs flex-shrink-0">
+                      ♫
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-semibold text-white">{h.title}</div>
                     <div className="truncate text-xs" style={{ color: "#8A8276" }}>

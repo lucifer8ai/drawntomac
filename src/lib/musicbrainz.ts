@@ -247,7 +247,9 @@ export async function isArtistInAllowedArea(artistMbid: string | null): Promise<
 
     return countries.some((c) => ALLOWED_COUNTRIES.includes(c.toUpperCase()));
   } catch {
-    return false;
+    // Fail open: if we can't verify the artist's area, don't block the import.
+    // The recording already passed post-filtering (no country = allowed, or country is in whitelist).
+    return true;
   }
 }
 
