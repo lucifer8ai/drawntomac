@@ -1,5 +1,6 @@
 const MUSICBRAINZ_BASE = "https://musicbrainz.org/ws/2";
 const USER_AGENT = "drawnto/1.0 (drawnTo.fm)";
+export const ALLOWED_COUNTRIES = ["IN", "US", "GB", "AU", "CA", "XW"];
 
 export interface MusicBrainzArtist {
   id: string;
@@ -7,6 +8,8 @@ export interface MusicBrainzArtist {
   "sort-name": string;
   type?: string;
   tags?: Array<{ name: string; count: number }>;
+  country?: string;
+  area?: { name: string; "iso-3166-1-codes"?: string[] };
 }
 
 export interface MusicBrainzReleaseGroup {
@@ -21,6 +24,8 @@ export interface MusicBrainzRelease {
   title: string;
   date?: string;
   country?: string;
+  status?: string;
+  disambiguation?: string;
   "release-group"?: { id: string; title: string };
 }
 
@@ -48,6 +53,7 @@ export interface ParsedMusicBrainzResult {
   mbid: string;
   title: string;
   artistName: string;
+  primaryArtistName: string;
   artistMbid: string | null;
   releaseGroupMbid: string | null;
   releaseGroupTitle: string | null;
@@ -56,83 +62,264 @@ export interface ParsedMusicBrainzResult {
   tags: string[];
 }
 
-function parseArtist(recording: MusicBrainzRecording): { name: string; mbid: string | null } {
+function parseArtist(recording: MusicBrainzRecording): { name: string; primaryName: string; mbid: string | null } {
   const credits = recording["artist-credit"];
-  if (!credits || credits.length === 0) return { name: "Unknown", mbid: null };
+  if (!credits || credits.length === 0) return { name: "Unknown", primaryName: "Unknown", mbid: null };
   const name = credits.map((c) => c.artist.name + (c.joinphrase ?? "")).join("").trim();
   const primary = credits[0].artist;
-  return { name: name || primary.name, mbid: primary.id ?? null };
+  return { name: name || primary.name, primaryName: primary.name, mbid: primary.id ?? null };
 }
 
-function parseReleaseInfo(
-  recording: MusicBrainzRecording,
-): { releaseGroupMbid: string | null; releaseGroupTitle: string | null; releaseDate: string | null; country: string | null } {
-  const releases = recording.releases ?? [];
-  if (releases.length === 0) {
-    return { releaseGroupMbid: null, releaseGroupTitle: null, releaseDate: null, country: null };
+function normalizeDate(raw: string | null): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  const ym = trimmed.match(/^(\d{4})-(\d{2})$/);
+  if (ym) return `${ym[1]}-${ym[2]}-01`;
+  const y = trimmed.match(/^(\d{4})$/);
+  if (y) return `${y[1]}-01-01`;
+  return null;
+}
+
+export function parseDisambiguation(str: string | undefined | null): { explicit: boolean; clean: boolean; hiRes: boolean } {
+  if (!str) return { explicit: false, clean: false, hiRes: false };
+  const lower = str.toLowerCase().trim();
+  const explicit = /\[explicit\]/i.test(lower);
+  const clean = /\[clean\]/i.test(lower);
+  const hiRes = /24-bit\s*(?:\/\s*)?96\s*khz/i.test(lower);
+  return { explicit, clean, hiRes };
+}
+
+function scoreRelease(release: MusicBrainzRelease): number {
+  let score = 0;
+
+  const status = (release.status ?? "").toLowerCase();
+  if (status === "official") score += 3;
+  else if (status === "promotion") score += 2;
+  else if (status === "bootleg") score += 1;
+
+  const dis = parseDisambiguation(release.disambiguation);
+  if (dis.explicit) score += 1;
+  if (dis.clean) score -= 1;
+  if (dis.hiRes) score -= 2;
+
+  if (release.country && ALLOWED_COUNTRIES.includes(release.country.toUpperCase())) {
+    score += 1;
   }
-  const first = releases[0];
-  const rg = first["release-group"];
-  return {
-    releaseGroupMbid: rg?.id ?? null,
-    releaseGroupTitle: rg?.title ?? null,
-    releaseDate: first.date ?? null,
-    country: first.country ?? null,
-  };
+
+  return score;
+}
+
+function releaseDateEpoch(release: MusicBrainzRelease): number {
+  const normalized = normalizeDate(release.date ?? null);
+  if (!normalized) return 0;
+  return new Date(normalized).getTime() / 1000;
+}
+
+export function pickBestRelease(releases: MusicBrainzRelease[]): MusicBrainzRelease | null {
+  if (releases.length === 0) return null;
+  if (releases.length === 1) return releases[0];
+
+  const scored = releases.map((r) => ({
+    release: r,
+    score: scoreRelease(r),
+    epoch: releaseDateEpoch(r),
+  }));
+
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return b.epoch - a.epoch;
+  });
+
+  return scored[0].release;
 }
 
 export function parseRecording(recording: MusicBrainzRecording): ParsedMusicBrainzResult {
   const artist = parseArtist(recording);
-  const releaseInfo = parseReleaseInfo(recording);
+  const releases = recording.releases ?? [];
+  const best = pickBestRelease(releases);
+  const rg = best?.["release-group"];
   const tags = (recording.tags ?? []).map((t) => t.name);
 
   return {
     mbid: recording.id,
     title: recording.title,
     artistName: artist.name,
+    primaryArtistName: artist.primaryName,
     artistMbid: artist.mbid,
-    releaseGroupMbid: releaseInfo.releaseGroupMbid,
-    releaseGroupTitle: releaseInfo.releaseGroupTitle,
-    releaseDate: releaseInfo.releaseDate,
-    country: releaseInfo.country,
+    releaseGroupMbid: rg?.id ?? null,
+    releaseGroupTitle: rg?.title ?? null,
+    releaseDate: normalizeDate(best?.date ?? null),
+    country: best?.country ?? null,
     tags,
   };
 }
 
 async function musicbrainzFetch(path: string): Promise<Response> {
-  // Dynamic import to avoid bundling rate limiter into client code
   const { checkRateLimit } = await import("./rate-limiter");
-  const allowed = await checkRateLimit("musicbrainz", 1, 1);
+  const allowed = await checkRateLimit("musicbrainz", 5, 3);
   if (!allowed) {
-    throw new Error("MusicBrainz rate limit exceeded — wait 1 second and retry.");
+    throw new Error("MusicBrainz rate limit exceeded — slow down and retry.");
   }
 
   const url = `${MUSICBRAINZ_BASE}${path}`;
-  const res = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
-  });
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
+      });
 
-  if (res.status === 503) {
-    throw new Error("MusicBrainz is temporarily unavailable (503).");
+      if (res.status === 503) {
+        throw new Error("MusicBrainz is temporarily unavailable (503).");
+      }
+
+      return res;
+    } catch (err) {
+      lastErr = err;
+      if (attempt < 2) {
+        await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+      }
+    }
   }
 
-  return res;
+  throw lastErr;
+}
+
+async function getSupabaseAdmin() {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin;
+}
+
+/**
+ * Check if an artist is from an allowed country.
+ * Checks DB artist_countries cache first; on miss, fetches from MusicBrainz
+ * /artist/{mbid} and checks artist.country AND artist.area.iso-3166-1-codes.
+ */
+export async function isArtistInAllowedArea(artistMbid: string | null): Promise<boolean> {
+  if (!artistMbid) return false;
+
+  const admin = await getSupabaseAdmin();
+
+  // Check cache first
+  const { data: cached } = await admin
+    .from("artists")
+    .select("artist_countries")
+    .eq("musicbrainz_id", artistMbid)
+    .maybeSingle();
+
+  if (cached?.artist_countries && cached.artist_countries.length > 0) {
+    return cached.artist_countries.some((c: string) =>
+      ALLOWED_COUNTRIES.includes(c.toUpperCase()),
+    );
+  }
+
+  // Fetch from MusicBrainz
+  try {
+    const res = await musicbrainzFetch(
+      `/artist/${encodeURIComponent(artistMbid)}?fmt=json&inc=area`,
+    );
+    if (!res.ok) return false;
+    const artist = (await res.json()) as MusicBrainzArtist;
+
+    const countries: string[] = [];
+    if (artist.country) countries.push(artist.country);
+    if (artist.area?.["iso-3166-1-codes"]) {
+      countries.push(...artist.area["iso-3166-1-codes"]);
+    }
+
+    // Populate cache
+    if (countries.length > 0) {
+      const slug = artist.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase().slice(0, 80);
+      await admin
+        .from("artists")
+        .upsert(
+          {
+            musicbrainz_id: artistMbid,
+            name: artist.name,
+            slug,
+            artist_countries: countries,
+          },
+          { onConflict: "musicbrainz_id" },
+        );
+    }
+
+    return countries.some((c) => ALLOWED_COUNTRIES.includes(c.toUpperCase()));
+  } catch {
+    return false;
+  }
+}
+
+function deduplicateRecordings(recordings: MusicBrainzRecording[]): MusicBrainzRecording[] {
+  const groups = new Map<string, { recording: MusicBrainzRecording; best: MusicBrainzRelease | null }>();
+
+  for (const rec of recordings) {
+    const credits = rec["artist-credit"];
+    const primaryArtist = credits?.[0]?.artist?.name ?? "Unknown";
+    const key = `${rec.title.toLowerCase()}||${primaryArtist.toLowerCase()}`;
+
+    const best = pickBestRelease(rec.releases ?? []);
+
+    const existing = groups.get(key);
+    if (!existing) {
+      groups.set(key, { recording: rec, best });
+      continue;
+    }
+
+    // Compare: if new recording has a better best release, replace
+    if (best && !existing.best) {
+      groups.set(key, { recording: rec, best });
+    } else if (best && existing.best) {
+      const newScore = scoreRelease(best);
+      const oldScore = scoreRelease(existing.best);
+      if (newScore > oldScore) {
+        groups.set(key, { recording: rec, best });
+      } else if (newScore === oldScore && releaseDateEpoch(best) > releaseDateEpoch(existing.best)) {
+        groups.set(key, { recording: rec, best });
+      }
+    }
+  }
+
+  return Array.from(groups.values()).map((g) => g.recording);
 }
 
 export async function searchRecordings(
   query: string,
   limit = 8,
   inc = "artists+tags+releases+genres",
+  artist?: string,
 ): Promise<ParsedMusicBrainzResult[]> {
+  // Build query WITHOUT country filter — we post-filter in JS so recordings
+  // with no country set (common for digital-only releases) aren't excluded.
+  let q: string;
+  if (artist) {
+    q = `recording:"${query}" AND artist:"${artist}"`;
+  } else {
+    q = query;
+  }
+
+  // Fetch more than needed since we'll filter some out
+  const fetchLimit = Math.min(limit * 3, 50);
   const res = await musicbrainzFetch(
-    `/recording?query=${encodeURIComponent(query)}&fmt=json&limit=${limit}&inc=${encodeURIComponent(inc)}`,
+    `/recording?query=${encodeURIComponent(q)}&fmt=json&limit=${fetchLimit}&inc=${encodeURIComponent(inc)}`,
   );
   if (!res.ok) {
     console.error("[musicbrainz search] error", res.status, res.statusText);
     return [];
   }
   const data = (await res.json()) as MusicBrainzSearchResponse;
-  return (data.recordings ?? []).map(parseRecording);
+  const deduped = deduplicateRecordings(data.recordings ?? []);
+
+  // Post-filter: exclude recordings whose best release has a country that is
+  // explicitly disallowed. Recordings with no country (null) pass through —
+  // a recording with no country could still be from an allowed artist area.
+  const passed = deduped.map(parseRecording).filter((rec) => {
+    if (!rec.country) return true;
+    return ALLOWED_COUNTRIES.includes(rec.country.toUpperCase());
+  });
+
+  return passed.slice(0, limit);
 }
 
 export async function getRecordingByMbid(

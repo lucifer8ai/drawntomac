@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { getRecordingByMbid } from "@/lib/musicbrainz";
-import { getCoverArt } from "@/lib/coverartarchive";
+import { getRecordingByMbid, type ParsedMusicBrainzResult, isArtistInAllowedArea, ALLOWED_COUNTRIES } from "@/lib/musicbrainz";
 import { searchGeniusArtwork } from "@/lib/genius";
 import { generateSlug, slugifyBase } from "@/lib/slugify";
 
@@ -9,6 +8,7 @@ const bodySchema = z.object({
   mbid: z.string().min(1),
   title: z.string().min(1),
   artistName: z.string().min(1),
+  primaryArtistName: z.string().optional(),
   artistMbid: z.string().nullable().optional(),
   releaseGroupMbid: z.string().nullable().optional(),
   releaseDate: z.string().nullable().optional(),
@@ -39,12 +39,49 @@ export const Route = createFileRoute("/api/import")({
           .eq("musicbrainz_id", body.mbid)
           .maybeSingle();
 
+        // If song already exists, just refresh artwork (cheap) and redirect
         if (existing) {
-          return Response.json({ slug: existing.slug, cached: true });
+          const geniusLookupName = body.primaryArtistName || body.artistName;
+          const genius = await searchGeniusArtwork(geniusLookupName, body.title);
+          if (genius.geniusSongId || genius.thumbnailUrl) {
+            await supabaseAdmin
+              .from("songs")
+              .update({
+                genius_thumbnail_url: genius.thumbnailUrl,
+                genius_song_id: genius.geniusSongId,
+              })
+              .eq("musicbrainz_id", body.mbid);
+          }
+          return Response.json({ slug: existing.slug });
         }
 
-        // Fetch full metadata from MusicBrainz for richer data
-        const recording = await getRecordingByMbid(body.mbid);
+        // Parallel: fetch full metadata from MusicBrainz + Genius artwork
+        const geniusLookupName = body.primaryArtistName || body.artistName;
+        const [recording, genius] = await Promise.all([
+          getRecordingByMbid(body.mbid).catch((err) => {
+            console.warn("[import] getRecordingByMbid failed, proceeding with search data:", (err as Error).message);
+            return null;
+          }),
+          searchGeniusArtwork(geniusLookupName, body.title),
+        ]);
+
+        const coverUrl = genius.thumbnailUrl;
+        const geniusSongId = genius.geniusSongId;
+        const geniusArtistId = genius.geniusArtistId;
+
+        // Artist area check: if release country not in allowed set, check artist area
+        const releaseCountry = recording?.country ?? null;
+        if (!releaseCountry || !ALLOWED_COUNTRIES.includes(releaseCountry.toUpperCase())) {
+          if (body.artistMbid) {
+            const allowed = await isArtistInAllowedArea(body.artistMbid);
+            if (!allowed) {
+              return Response.json(
+                { error: "This artist is not from an allowed area." },
+                { status: 403 },
+              );
+            }
+          }
+        }
 
         // Determine artist slug + id
         const artistSlug = slugifyBase(body.artistName).slice(0, 80) || body.mbid;
@@ -55,6 +92,8 @@ export const Route = createFileRoute("/api/import")({
               name: body.artistName,
               slug: artistSlug,
               musicbrainz_id: body.artistMbid ?? null,
+              genius_artist_id: geniusArtistId,
+              image_url: genius.artistImageUrl,
             },
             { onConflict: "musicbrainz_id" },
           )
@@ -77,28 +116,10 @@ export const Route = createFileRoute("/api/import")({
           artistId = refetched?.id ?? null;
         }
 
-        // Cover art: CAA primary, Genius fallback
-        let coverUrl: string | null = null;
-        let geniusSongId: string | null = null;
-        let geniusArtistId: string | null = null;
-
-        const rgMbid = recording?.releaseGroupMbid ?? body.releaseGroupMbid ?? null;
-        if (rgMbid) {
-          coverUrl = await getCoverArt(rgMbid);
-        }
-
-        if (!coverUrl) {
-          const genius = await searchGeniusArtwork(body.artistName, body.title);
-          coverUrl = genius.thumbnailUrl;
-          geniusSongId = genius.geniusSongId;
-          geniusArtistId = genius.geniusArtistId;
-        }
-
         // Generate slug
         const slug = generateSlug(body.title);
         const releaseGroupMbid = recording?.releaseGroupMbid ?? body.releaseGroupMbid ?? null;
         const releaseDate = recording?.releaseDate ?? body.releaseDate ?? null;
-        const country = recording?.country ?? null;
         const tags = recording?.tags ?? [];
 
         const songRow = {
@@ -111,7 +132,7 @@ export const Route = createFileRoute("/api/import")({
           genre_tags: tags,
           credits: null,
           release_group_mbid: releaseGroupMbid,
-          country,
+          country: releaseCountry,
           release_date: releaseDate,
         };
 
