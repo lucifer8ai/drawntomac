@@ -114,8 +114,16 @@ export function ReviewComposer({
       <div className="mt-8">
         <button
           onClick={() => setMode(canEdit ? "viewing" : "locked")}
-          className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white transition-colors"
-          style={{ border: "1px solid rgba(245,240,232,0.08)" }}
+          className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors"
+          style={{ color: "#8A8276", border: "1px solid rgba(245,240,232,0.08)" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = "#F5F0E8";
+            e.currentTarget.style.borderColor = "rgba(245,240,232,0.20)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = "#8A8276";
+            e.currentTarget.style.borderColor = "rgba(245,240,232,0.08)";
+          }}
         >
           <Eye size={14} />
           See your review

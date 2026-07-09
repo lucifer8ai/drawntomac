@@ -9,10 +9,10 @@ type SongInfo =
 export function SongHeader({ song }: { song: SongInfo }) {
   return (
     <div>
-      <h1 className="text-4xl font-black leading-tight tracking-tight text-white">
+      <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-white">
         {song.title}
       </h1>
-      <p className="mt-1 text-lg" style={{ color: "#E07B6A" }}>
+      <p className="mt-1 text-lg" style={{ color: "#D4556A" }}>
         {song.artist?.name ?? "Unknown artist"}
       </p>
 
@@ -32,7 +32,7 @@ export function SongHeader({ song }: { song: SongInfo }) {
           {song.genre_tags.map((tag: string) => (
             <span
               key={tag}
-              className="rounded-full px-2.5 py-0.5 text-xs font-medium"
+              className="rounded-full px-2 py-0.5 text-xs font-medium"
               style={{ backgroundColor: "rgba(245,240,232,0.08)", color: "#8A8276" }}
             >
               {tag}

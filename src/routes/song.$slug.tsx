@@ -85,7 +85,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       >
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <Link to="/home" className="text-2xl font-black tracking-tight text-white">
-            #d.To
+            #drawnTo
           </Link>
           <Link to="/home" className="flex items-center gap-1 text-xs font-semibold" style={{ color: "#8A8276" }}>
             <ArrowLeft size={16} />
