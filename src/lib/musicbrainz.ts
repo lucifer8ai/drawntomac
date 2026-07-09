@@ -1,7 +1,7 @@
 const MUSICBRAINZ_BASE = "https://musicbrainz.org/ws/2";
 const USER_AGENT = "drawnto/1.0 (drawnTo.fm)";
 export const ALLOWED_COUNTRIES = ["IN", "US", "GB", "AU", "CA", "XW"];
-export const ALLOWED_ARTISTS = ["Anuv Jain"];
+export const ALLOWED_ARTISTS = ["Anuv Jain", "Divine"];
 
 export interface MusicBrainzArtist {
   id: string;
@@ -248,7 +248,10 @@ export async function isArtistInAllowedArea(artistMbid: string | null): Promise<
 
     return countries.some((c) => ALLOWED_COUNTRIES.includes(c.toUpperCase()));
   } catch {
-    return false;
+    // Fail open: if we can't verify the artist's area (network error, rate limit),
+    // don't block the import. Search is already broad — better to show the song
+    // than silently block legitimate artists.
+    return true;
   }
 }
 
@@ -291,8 +294,6 @@ export async function searchRecordings(
   inc = "artists+tags+releases+genres",
   artist?: string,
 ): Promise<ParsedMusicBrainzResult[]> {
-  // Build query WITHOUT country filter — we post-filter in JS so recordings
-  // with no country set (common for digital-only releases) aren't excluded.
   let q: string;
   if (artist) {
     q = `recording:"${query}" AND artist:"${artist}"`;
@@ -300,27 +301,15 @@ export async function searchRecordings(
     q = query;
   }
 
-  // Fetch more than needed since we'll filter some out
-  const fetchLimit = Math.min(limit * 3, 50);
   const res = await musicbrainzFetch(
-    `/recording?query=${encodeURIComponent(q)}&fmt=json&limit=${fetchLimit}&inc=${encodeURIComponent(inc)}`,
+    `/recording?query=${encodeURIComponent(q)}&fmt=json&limit=${limit}&inc=${encodeURIComponent(inc)}`,
   );
   if (!res.ok) {
     console.error("[musicbrainz search] error", res.status, res.statusText);
     return [];
   }
   const data = (await res.json()) as MusicBrainzSearchResponse;
-  const deduped = deduplicateRecordings(data.recordings ?? []);
-
-  // Post-filter: exclude recordings whose best release has a country that is
-  // explicitly disallowed. Recordings with no country (null) pass through —
-  // a recording with no country could still be from an allowed artist area.
-  const passed = deduped.map(parseRecording).filter((rec) => {
-    if (!rec.country) return true;
-    return ALLOWED_COUNTRIES.includes(rec.country.toUpperCase());
-  });
-
-  return passed.slice(0, limit);
+  return deduplicateRecordings(data.recordings ?? []).map(parseRecording);
 }
 
 export async function getRecordingByMbid(
