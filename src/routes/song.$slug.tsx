@@ -127,7 +127,7 @@ function SongPage() {
 
     const { data, count, error } = await supabase
       .from("diary_entries")
-      .select("*, profile:profiles(username,display_name,avatar_url)", { count: "exact" })
+      .select("*", { count: "exact" })
       .eq("song_id", song.id)
       .eq("type", "review")
       .order("created_at", { ascending: false })
@@ -138,9 +138,21 @@ function SongPage() {
       return;
     }
 
-    const rows = (data ?? []) as unknown as (DiaryEntry & { profile: Profile | null })[];
+    const rows = (data ?? []) as DiaryEntry[];
     setTotalReviewCount(count ?? 0);
     const ids = rows.map((r) => r.id);
+
+    // Fetch profiles separately — embedded join fails because diary_entries.user_id
+    // FK points to auth.users, not profiles, and PostgREST can't resolve the chain.
+    const userIds = [...new Set(rows.map((r) => r.user_id))];
+    let profileMap = new Map<string, Profile>();
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, username, display_name, avatar_url")
+        .in("id", userIds);
+      (profiles ?? []).forEach((p: any) => profileMap.set(p.id, p));
+    }
 
     let likeMap = new Map<string, number>();
     let myLikeSet = new Set<string>();
@@ -165,7 +177,7 @@ function SongPage() {
     setReviews(
       rows.map((r) => ({
         ...r,
-        profile: r.profile,
+        profile: profileMap.get(r.user_id) ?? null,
         like_count: likeMap.get(r.id) ?? 0,
         liked_by_me: myLikeSet.has(r.id),
         comment_count: commentMap.get(r.id) ?? 0,
@@ -290,6 +302,7 @@ function SongPage() {
                   userId={userId}
                   entry={myEntries.review}
                   onPosted={() => {
+                    setReviewPage(1);
                     void loadReviews();
                     void loadMyEntries();
                   }}
