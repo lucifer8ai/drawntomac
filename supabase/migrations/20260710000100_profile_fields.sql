@@ -9,12 +9,14 @@ CREATE TABLE IF NOT EXISTS public.locations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   country TEXT NOT NULL,
   city TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (country, COALESCE(city, ''))
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_locations_country ON public.locations (country);
-CREATE INDEX IF NOT EXISTS idx_locations_country_city ON public.locations (country, city);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_locations_country_city_unique
+  ON public.locations (country, COALESCE(city, ''));
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_locations_country_city_unique
+  ON public.locations (country, COALESCE(city, ''));
 
 ALTER TABLE public.locations ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "locations readable by all" ON public.locations FOR SELECT USING (true);
