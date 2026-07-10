@@ -69,7 +69,6 @@ export type Database = {
           user_id: string
           song_id: string
           type: "heard" | "want" | "like" | "dislike" | "review"
-          listened_on: string | null
           body: string | null
           created_at: string
           updated_at: string
@@ -79,7 +78,6 @@ export type Database = {
           user_id: string
           song_id: string
           type: "heard" | "want" | "like" | "dislike" | "review"
-          listened_on?: string | null
           body?: string | null
           created_at?: string
           updated_at?: string
@@ -89,7 +87,6 @@ export type Database = {
           user_id?: string
           song_id?: string
           type?: "heard" | "want" | "like" | "dislike" | "review"
-          listened_on?: string | null
           body?: string | null
           created_at?: string
           updated_at?: string
@@ -183,7 +180,22 @@ export type Database = {
           follower_id?: string
           following_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_following_id_fkey"
+            columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -215,41 +227,79 @@ export type Database = {
         }
         Relationships: []
       }
+      locations: {
+        Row: {
+          id: string
+          country: string
+          city: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          country: string
+          city?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          country?: string
+          city?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
+          banner_url: string | null
           bio: string | null
           city: string | null
           country: string | null
           created_at: string
           display_name: string | null
           id: string
+          location_id: string | null
+          pronouns: string | null
           updated_at: string
           username: string
         }
         Insert: {
           avatar_url?: string | null
+          banner_url?: string | null
           bio?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
           display_name?: string | null
           id: string
+          location_id?: string | null
+          pronouns?: string | null
           updated_at?: string
           username: string
         }
         Update: {
           avatar_url?: string | null
+          banner_url?: string | null
           bio?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
+          location_id?: string | null
+          pronouns?: string | null
           updated_at?: string
           username?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rate_limits: {
         Row: {
@@ -420,6 +470,54 @@ export type Database = {
         Returns: {
           like_count: number
           dislike_count: number
+        }[]
+      }
+      get_trending_songs: {
+        Args: Record<string, never>
+        Returns: {
+          song_id: string
+          trending_score: number
+          heard_count: number
+          like_count: number
+          dislike_count: number
+          review_count: number
+        }[]
+      }
+      get_compatible_users: {
+        Args: {
+          current_user_id: string
+        }
+        Returns: {
+          user_id: string
+          username: string
+          display_name: string | null
+          avatar_url: string | null
+          shared_songs: number
+          liked_songs: string[]
+          want_songs: string[]
+        }[]
+      }
+      get_for_you_songs: {
+        Args: {
+          user_id: string
+        }
+        Returns: {
+          song_id: string
+          trending_score: number
+          heard_count: number
+          like_count: number
+          dislike_count: number
+          review_count: number
+        }[]
+      }
+      get_recently_imported_songs: {
+        Args: Record<string, never>
+        Returns: {
+          song_id: string
+          title: string
+          slug: string
+          artist_name: string | null
+          genius_thumbnail_url: string | null
         }[]
       }
     }
