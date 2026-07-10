@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Collapsible,
   CollapsibleContent,
@@ -23,6 +24,7 @@ interface EditFormProps {
     location_id: string | null;
     avatar_url: string | null;
     banner_url: string | null;
+    display_name_visible: boolean;
     username: string;
   };
   userId: string;
@@ -33,6 +35,7 @@ interface EditFormProps {
     location_id?: string | null;
     avatar_url?: string | null;
     banner_url?: string | null;
+    display_name_visible?: boolean;
   }) => Promise<void>;
   onUploadAvatar: (file: File) => Promise<string>;
   onUploadBanner: (file: File) => Promise<string>;
@@ -53,6 +56,7 @@ export function ProfileEditForm({
   const [bio, setBio] = useState(initial.bio ?? "");
   const [bioCount, setBioCount] = useState((initial.bio ?? "").length);
   const [pronouns, setPronouns] = useState(initial.pronouns ?? "");
+  const [displayNameVisible, setDisplayNameVisible] = useState(initial.display_name_visible ?? true);
   const [locationId, setLocationId] = useState<string | null>(initial.location_id);
   const [avatarUrl, setAvatarUrl] = useState(initial.avatar_url);
   const [bannerUrl, setBannerUrl] = useState(initial.banner_url);
@@ -78,17 +82,28 @@ export function ProfileEditForm({
       location_id: locationId,
       avatar_url: avatarUrl,
       banner_url: bannerUrl,
+      display_name_visible: displayNameVisible,
     });
   }
 
   async function handleBannerUpload(file: File) {
-    const url = await onUploadBanner(file);
-    setBannerUrl(url);
+    try {
+      const url = await onUploadBanner(file);
+      setBannerUrl(url);
+      toast.success("Banner updated");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to upload banner");
+    }
   }
 
   async function handleAvatarUpload(file: File) {
-    const url = await onUploadAvatar(file);
-    setAvatarUrl(url);
+    try {
+      const url = await onUploadAvatar(file);
+      setAvatarUrl(url);
+      toast.success("Avatar updated");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to upload avatar");
+    }
   }
 
   async function handleEmailChange() {
@@ -154,6 +169,16 @@ export function ProfileEditForm({
           />
           <div className="text-xs text-muted-foreground mt-1 text-right">
             {displayName.length}/50
+          </div>
+          <div className="flex items-center justify-between mt-2">
+            <Label htmlFor="show-display-name" className="text-sm text-muted-foreground cursor-pointer">
+              Show display name on my public profile
+            </Label>
+            <Switch
+              id="show-display-name"
+              checked={displayNameVisible}
+              onCheckedChange={setDisplayNameVisible}
+            />
           </div>
         </div>
 

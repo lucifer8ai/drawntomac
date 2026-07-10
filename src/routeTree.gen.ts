@@ -12,9 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SongSlugRouteImport } from './routes/song.$slug'
+import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as ApiSearchRouteImport } from './routes/api/search'
 import { Route as ApiImportRouteImport } from './routes/api/import'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedUserUsernameRouteImport } from './routes/_authenticated/user.$username'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -28,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
 const SongSlugRoute = SongSlugRouteImport.update({
   id: '/song/$slug',
   path: '/song/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSearchRoute = ApiSearchRouteImport.update({
@@ -45,20 +52,30 @@ const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   path: '/home',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedUserUsernameRoute =
+  AuthenticatedUserUsernameRouteImport.update({
+    id: '/user/$username',
+    path: '/user/$username',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/home': typeof AuthenticatedHomeRoute
   '/api/import': typeof ApiImportRoute
   '/api/search': typeof ApiSearchRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/song/$slug': typeof SongSlugRoute
+  '/user/$username': typeof AuthenticatedUserUsernameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/home': typeof AuthenticatedHomeRoute
   '/api/import': typeof ApiImportRoute
   '/api/search': typeof ApiSearchRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/song/$slug': typeof SongSlugRoute
+  '/user/$username': typeof AuthenticatedUserUsernameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -67,13 +84,29 @@ export interface FileRoutesById {
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/api/import': typeof ApiImportRoute
   '/api/search': typeof ApiSearchRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/song/$slug': typeof SongSlugRoute
+  '/_authenticated/user/$username': typeof AuthenticatedUserUsernameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/home' | '/api/import' | '/api/search' | '/song/$slug'
+  fullPaths:
+    | '/'
+    | '/home'
+    | '/api/import'
+    | '/api/search'
+    | '/auth/callback'
+    | '/song/$slug'
+    | '/user/$username'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/home' | '/api/import' | '/api/search' | '/song/$slug'
+  to:
+    | '/'
+    | '/home'
+    | '/api/import'
+    | '/api/search'
+    | '/auth/callback'
+    | '/song/$slug'
+    | '/user/$username'
   id:
     | '__root__'
     | '/'
@@ -81,7 +114,9 @@ export interface FileRouteTypes {
     | '/_authenticated/home'
     | '/api/import'
     | '/api/search'
+    | '/auth/callback'
     | '/song/$slug'
+    | '/_authenticated/user/$username'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -89,6 +124,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   ApiImportRoute: typeof ApiImportRoute
   ApiSearchRoute: typeof ApiSearchRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   SongSlugRoute: typeof SongSlugRoute
 }
 
@@ -115,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SongSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/search': {
       id: '/api/search'
       path: '/api/search'
@@ -136,15 +179,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHomeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/user/$username': {
+      id: '/_authenticated/user/$username'
+      path: '/user/$username'
+      fullPath: '/user/$username'
+      preLoaderRoute: typeof AuthenticatedUserUsernameRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
+  AuthenticatedUserUsernameRoute: typeof AuthenticatedUserUsernameRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
+  AuthenticatedUserUsernameRoute: AuthenticatedUserUsernameRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -155,6 +207,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   ApiImportRoute: ApiImportRoute,
   ApiSearchRoute: ApiSearchRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   SongSlugRoute: SongSlugRoute,
 }
 export const routeTree = rootRouteImport

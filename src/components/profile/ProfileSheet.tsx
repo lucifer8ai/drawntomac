@@ -73,6 +73,7 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
                   location_id: profile.location_id,
                   avatar_url: profile.avatar_url,
                   banner_url: profile.banner_url,
+                  display_name_visible: profile.display_name_visible,
                   username: profile.username,
                 }}
                 userId={userId}

@@ -5,6 +5,7 @@ export interface Profile {
   id: string;
   username: string;
   display_name: string | null;
+  display_name_visible: boolean;
   bio: string | null;
   avatar_url: string | null;
   banner_url: string | null;
@@ -33,6 +34,7 @@ interface ProfileUpdateFields {
   location_id?: string | null;
   avatar_url?: string | null;
   banner_url?: string | null;
+  display_name_visible?: boolean;
 }
 
 export function useProfile(userId: string | null) {
@@ -49,7 +51,7 @@ export function useProfile(userId: string | null) {
     try {
       const { data, error: err } = await supabase
         .from("profiles")
-        .select("id, username, display_name, bio, avatar_url, banner_url, pronouns, location_id, city, country, updated_at")
+        .select("id, username, display_name, display_name_visible, bio, avatar_url, banner_url, pronouns, location_id, city, country, updated_at")
         .eq("id", userId)
         .maybeSingle();
       if (err) throw err;
@@ -85,7 +87,7 @@ export function useProfile(userId: string | null) {
     const { error: uploadErr } = await supabase.storage
       .from(bucket)
       .upload(path, file, { upsert: true });
-    if (uploadErr) throw uploadErr;
+    if (uploadErr) throw new Error(`Storage error (${bucket}): ${uploadErr.message}`);
 
     const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(path);
     return publicUrl.publicUrl;

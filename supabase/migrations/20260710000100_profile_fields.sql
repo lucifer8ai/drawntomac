@@ -19,7 +19,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_locations_country_city_unique
   ON public.locations (country, COALESCE(city, ''));
 
 ALTER TABLE public.locations ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "locations readable by all" ON public.locations FOR SELECT USING (true);
+DO $$ BEGIN
+  CREATE POLICY "locations readable by all" ON public.locations FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 GRANT SELECT ON public.locations TO anon, authenticated;
 
 -- Seed 249 countries with major cities
@@ -721,4 +724,5 @@ INSERT INTO public.locations (country, city) VALUES
   ('East Timor', NULL),
   ('San Marino', NULL),
   ('Vatican City', NULL),
-  ('Andorra', NULL);
+  ('Andorra', NULL)
+ON CONFLICT DO NOTHING;

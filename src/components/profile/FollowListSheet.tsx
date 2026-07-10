@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Link } from "@tanstack/react-router";
 import { UserMinus } from "lucide-react";
 
 interface FollowerRow {
@@ -91,9 +92,11 @@ export function FollowListSheet({
             </div>
           )}
           {rows.map((row) => (
-            <div
+            <Link
               key={row.id}
-              className="flex items-center gap-3 px-4 py-3 border-b border-border/50"
+              to="/user/$username"
+              params={{ username: row.username }}
+              className="flex items-center gap-3 px-4 py-3 border-b border-border/50 hover:bg-white/[0.03] transition-colors"
             >
               <div className="h-10 w-10 rounded-full bg-muted overflow-hidden shrink-0">
                 {row.avatar_url ? (
@@ -117,12 +120,15 @@ export function FollowListSheet({
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  onClick={() => handleUnfollow(row.id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleUnfollow(row.id);
+                  }}
                 >
                   <UserMinus size={16} />
                 </Button>
               )}
-            </div>
+            </Link>
           ))}
         </div>
       </SheetContent>
