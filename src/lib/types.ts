@@ -446,10 +446,12 @@ export type Database = {
         Returns: boolean
       }
       get_compatible_users: {
-        Args: { current_user_id: string }
+        Args: { current_user_id: string; sort_mode?: string; page_offset?: number }
         Returns: {
           avatar_url: string
+          current_user_total: number
           display_name: string
+          last_active_at: string | null
           liked_songs: string[]
           shared_disliked: number
           shared_heard: number
@@ -457,9 +459,21 @@ export type Database = {
           shared_reviewed: number
           shared_songs: number
           shared_want: number
+          top_shared_artist: string | null
           user_id: string
           username: string
           want_songs: string[]
+        }[]
+      }
+      get_connecting_songs: {
+        Args: { current_user_id: string; limit_count?: number }
+        Returns: {
+          album_art_url: string | null
+          artist_name: string | null
+          slug: string
+          song_id: string
+          source_display_name: string | null
+          title: string
         }[]
       }
       get_for_you_songs: {
@@ -490,8 +504,28 @@ export type Database = {
           like_count: number
         }[]
       }
+      get_top_movers: {
+        Args: { limit_count?: number }
+        Returns: {
+          album_art_url: string | null
+          artist_name: string | null
+          current_score: number
+          previous_score: number
+          rank_delta: number
+          slug: string
+          song_id: string
+          title: string
+        }[]
+      }
+      get_trending_social_proof: {
+        Args: { current_user_id: string; song_ids: string[] }
+        Returns: {
+          match_count: number
+          song_id: string
+        }[]
+      }
       get_trending_songs: {
-        Args: never
+        Args: { window_days?: number }
         Returns: {
           dislike_count: number
           heard_count: number
@@ -509,6 +543,24 @@ export type Database = {
           shared_liked: number
           shared_reviewed: number
           shared_songs: number
+        }[]
+      }
+      get_feed: {
+        Args: { p_user_id: string; p_cursor?: string; p_limit?: number }
+        Returns: {
+          album_art_url: string | null
+          artist_name: string | null
+          avatar_url: string | null
+          body: string | null
+          created_at: string
+          display_name: string | null
+          entry_id: string
+          song_id: string
+          song_slug: string
+          song_title: string
+          type: string
+          user_id: string
+          username: string
         }[]
       }
     }

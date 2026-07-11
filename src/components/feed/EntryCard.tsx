@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { TypeDot } from "./TypeDot";
 
 export interface EntryCardData {
   entryId: string;
-  entryType: "heard" | "like" | "review" | "want";
+  entryType: "heard" | "like" | "dislike" | "review" | "want";
   songTitle: string;
   songSlug: string;
   artistName: string | null;
@@ -35,6 +37,7 @@ function getActionLabel(type: string): string {
   switch (type) {
     case "heard": return "listened to";
     case "like": return "liked";
+    case "dislike": return "disliked";
     case "review": return "reviewed";
     case "want": return "wants to hear";
     default: return "";
@@ -44,6 +47,7 @@ function getActionLabel(type: string): string {
 export function EntryCard({ data }: { data: EntryCardData }) {
   const name = data.displayName ?? data.username;
   const initial = (name[0] ?? "?").toUpperCase();
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <Link
@@ -78,7 +82,7 @@ export function EntryCard({ data }: { data: EntryCardData }) {
             </Link>{" "}
             <span className="text-muted-foreground">{getActionLabel(data.entryType)}</span>
           </div>
-          <div className="mt-0.5 text-base font-semibold font-serif text-foreground truncate" title={data.songTitle}>
+          <div className="mt-0.5 text-base font-semibold text-foreground truncate" title={data.songTitle}>
             {data.songTitle}
           </div>
           {data.artistName && (
@@ -86,24 +90,52 @@ export function EntryCard({ data }: { data: EntryCardData }) {
               {data.artistName}
             </div>
           )}
-          {data.reviewBody && (
-            <div className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-              {data.reviewBody}
+          {data.reviewBody ? (
+            <div>
+              <div
+                className={`mt-1 text-xs leading-relaxed text-muted-foreground relative ${expanded ? "" : "line-clamp-3"}`}
+              >
+                {!expanded && (
+                  <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+                )}
+                {data.reviewBody}
+              </div>
+              <button
+                type="button"
+                className="text-xs text-primary hover:underline mt-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setExpanded(!expanded);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setExpanded(!expanded);
+                  }
+                }}
+              >
+                {expanded ? "... less" : "... more"}
+              </button>
             </div>
-          )}
+          ) : null}
           <div className="mt-1 text-xs text-muted-foreground">
             {relativeTime(data.createdAt)}
           </div>
         </div>
 
         {data.albumArtUrl && (
-          <img
-            src={data.albumArtUrl}
-            alt={`${data.songTitle} album art`}
-            className="h-14 w-14 flex-shrink-0 rounded-lg object-cover"
-            loading="lazy"
-            decoding="async"
-          />
+          <div className="relative h-14 w-14 flex-shrink-0">
+            <img
+              src={data.albumArtUrl}
+              alt={`${data.songTitle} album art`}
+              className="h-14 w-14 rounded-lg object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+            <TypeDot type={data.entryType} />
+          </div>
         )}
       </div>
     </Link>
