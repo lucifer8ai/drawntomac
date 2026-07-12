@@ -92,7 +92,19 @@ export function useFeed() {
       p_limit: PAGE_SIZE,
     });
 
-    if (rpcError) throw rpcError;
+    if (rpcError) {
+      const msg = (rpcError as any)?.message ?? "";
+      if (
+        (rpcError as any)?.code === "PGRST202" ||
+        msg.includes("function") ||
+        msg.includes("not found")
+      ) {
+        throw new Error(
+          "get_feed function not deployed. Run: npm run deploy-migrations",
+        );
+      }
+      throw rpcError;
+    }
 
     const entries: FeedEntry[] = (data ?? []).map(mapEntry).filter((e) => e.entryId);
     const more = entries.length > PAGE_SIZE;
