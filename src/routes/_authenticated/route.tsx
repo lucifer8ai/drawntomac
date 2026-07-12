@@ -1,5 +1,5 @@
 import { useEffect, useState, createContext, useContext } from "react";
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/nav/BottomNav";
@@ -14,6 +14,7 @@ interface TabContextValue {
   profile: { display_name: string | null; avatar_url: string | null; username: string } | null;
   discoverSection: DiscoverSection;
   setDiscoverSection: (s: DiscoverSection) => void;
+  triggerSearch: () => void;
 }
 
 export const TabContext = createContext<TabContextValue>({
@@ -22,6 +23,7 @@ export const TabContext = createContext<TabContextValue>({
   profile: null,
   discoverSection: "for-you",
   setDiscoverSection: () => {},
+  triggerSearch: () => {},
 });
 
 export const useTabContext = () => useContext(TabContext);
@@ -39,12 +41,22 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
   const [tab, setTab] = useState<Tab>("feed");
   const [discoverSection, setDiscoverSection] = useState<DiscoverSection>("for-you");
+  const [searchTrigger, setSearchTrigger] = useState(0);
   const [profile, setProfile] = useState<{
     display_name: string | null;
     avatar_url: string | null;
     username: string;
   } | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
+  const navigate = useNavigate();
+  const router = useRouter();
+
+  const handleTabChange = (t: Tab) => {
+    setTab(t);
+    if (router.state.location.pathname !== "/home") {
+      navigate({ to: "/home" });
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -60,18 +72,27 @@ function AuthenticatedLayout() {
   }, []);
 
   return (
-    <TabContext.Provider value={{ activeTab: tab, setTab, profile, discoverSection, setDiscoverSection }}>
+    <TabContext.Provider value={{ activeTab: tab, setTab: handleTabChange, profile, discoverSection, setDiscoverSection, triggerSearch: () => setSearchTrigger((n) => n + 1) }}>
       <div className="min-h-screen bg-background text-foreground">
         <AppHeader
           activeTab={tab}
-          onTabChange={setTab}
+          onTabChange={handleTabChange}
           avatarUrl={profile?.avatar_url}
           displayName={profile?.display_name ?? profile?.username}
           onProfileClick={() => setProfileOpen(true)}
+          triggerSearch={searchTrigger}
         />
         <Outlet />
-        <BottomNav activeTab={tab} onTabChange={setTab} />
-        <ProfileSheet open={profileOpen} onClose={() => setProfileOpen(false)} />
+        <BottomNav activeTab={tab} onTabChange={handleTabChange} />
+        <ProfileSheet
+          open={profileOpen}
+          onClose={() => setProfileOpen(false)}
+          onProfileUpdate={(fields) => {
+            setProfile((prev) =>
+              prev ? { ...prev, ...fields } : prev
+            );
+          }}
+        />
       </div>
     </TabContext.Provider>
   );

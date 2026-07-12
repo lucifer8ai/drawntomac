@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { FollowListSheet } from "./FollowListSheet";
-import { CompatibleUsersList } from "../feed/CompatibleUsersList";
+import { ProfileStatsRow } from "./ProfileStatsRow";
 import { useCompatibility, getCompatibilityTier } from "@/hooks/useCompatibility";
-import { useCompatibleUsers } from "@/hooks/useCompatibleUsers";
+import { useProfileStats } from "@/hooks/useProfileStats";
+import { toast } from "sonner";
 
 interface ProfileData {
   id: string;
@@ -45,6 +47,7 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
     isOwnProfile ? null : viewerId,
     isOwnProfile ? null : (profile?.id ?? null),
   );
+  const { stats: tasteStats, loading: statsLoading } = useProfileStats(profile?.id ?? null);
 
   useEffect(() => {
     if (!username) return;
@@ -56,36 +59,36 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
       .select("id, username, display_name, display_name_visible, bio, avatar_url, banner_url, pronouns, country, city")
       .eq("username", username)
       .single()
-      .then(({ data, error: err }) => {
+      .then(async ({ data, error: err }) => {
         if (err || !data) {
-          setError("User not found");
+          setError("This user doesn't exist or has changed their username.");
           setLoading(false);
           return;
         }
-        setProfile(data as ProfileData);
+        const profileData = data as ProfileData;
+        setProfile(profileData);
         setLoading(false);
 
-        // Check follow status if viewer is different
-        if (viewerId && data.id !== viewerId) {
-          supabase
-            .from("follows")
-            .select("id")
-            .eq("follower_id", viewerId)
-            .eq("following_id", data.id)
-            .maybeSingle()
-            .then(({ data: followData }) => {
-              setIsFollowing(!!followData);
-            });
-        }
-
-        // Fetch follow counts
-        Promise.all([
-          supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", data.id),
-          supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", data.id),
-        ]).then(([{ count: fc }, { count: fr }]) => {
+        if (viewerId && profileData.id !== viewerId) {
+          const [followResult, countsResult] = await Promise.all([
+            supabase.from("follows").select("id").eq("follower_id", viewerId).eq("following_id", profileData.id).maybeSingle(),
+            Promise.all([
+              supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", profileData.id),
+              supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", profileData.id),
+            ]),
+          ]);
+          setIsFollowing(!!followResult.data);
+          const [{ count: fc }, { count: fr }] = countsResult;
           setFollowingCount(fc ?? 0);
           setFollowerCount(fr ?? 0);
-        });
+        } else {
+          const [{ count: fc }, { count: fr }] = await Promise.all([
+            supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", profileData.id),
+            supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", profileData.id),
+          ]);
+          setFollowingCount(fc ?? 0);
+          setFollowerCount(fr ?? 0);
+        }
       });
   }, [username, viewerId]);
 
@@ -94,22 +97,35 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
     setFollowLoading(true);
     try {
       if (isFollowing) {
-        await supabase
+        const { error: delErr } = await supabase
           .from("follows")
           .delete()
           .eq("follower_id", viewerId)
           .eq("following_id", profile.id);
+        if (delErr) throw delErr;
         setIsFollowing(false);
-        setFollowerCount((c) => Math.max(0, c - 1));
       } else {
-        await supabase
+        const { error: insErr } = await supabase
           .from("follows")
           .insert({ follower_id: viewerId, following_id: profile.id });
+        if (insErr) throw insErr;
         setIsFollowing(true);
-        setFollowerCount((c) => c + 1);
       }
-    } catch {
-      // ignore
+      const [{ count: fc }, { count: fr }] = await Promise.all([
+        supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", profile.id),
+        supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", profile.id),
+      ]);
+      setFollowingCount(fc ?? 0);
+      setFollowerCount(fr ?? 0);
+    } catch (e: any) {
+      toast.error(`Couldn't follow @${profile.username}. Try again.`);
+      const { data: refetch } = await supabase
+        .from("follows")
+        .select("id")
+        .eq("follower_id", viewerId)
+        .eq("following_id", profile.id)
+        .maybeSingle();
+      setIsFollowing(!!refetch);
     } finally {
       setFollowLoading(false);
     }
@@ -117,8 +133,35 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-sm text-muted-foreground">Loading...</div>
+      <div className="flex flex-col mx-auto max-w-6xl w-full">
+        <div className="w-full aspect-[16/9] md:aspect-[3/1] animate-skeleton" />
+        <div className="max-w-2xl mx-auto w-full px-4">
+          <div className="h-28 w-28 rounded-full animate-skeleton -mt-10 md:-mt-12 ring-2 ring-background" />
+          <div className="pt-2 space-y-2">
+            <div className="h-7 w-48 animate-skeleton rounded-lg" />
+            <div className="h-5 w-32 animate-skeleton rounded-lg" />
+          </div>
+          <div className="pt-2">
+            <div className="h-4 w-full animate-skeleton rounded-lg" />
+            <div className="h-4 w-3/4 animate-skeleton rounded-lg mt-1.5" />
+          </div>
+          <div className="flex items-center justify-between py-3 border-t border-b border-border/10 mt-3">
+            <div className="flex gap-4">
+              <div className="h-5 w-20 animate-skeleton rounded-lg" />
+              <div className="h-5 w-20 animate-skeleton rounded-lg" />
+            </div>
+            <div className="h-9 w-24 animate-skeleton rounded-lg" />
+          </div>
+          <div className="flex justify-around py-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex flex-col items-center gap-1.5">
+                <div className="h-5 w-5 animate-skeleton rounded" />
+                <div className="h-6 w-8 animate-skeleton rounded" />
+                <div className="h-3 w-10 animate-skeleton rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -126,7 +169,9 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
   if (error || !profile) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
-        <p className="text-sm text-muted-foreground">User not found</p>
+        <p className="text-base text-muted-foreground">
+          This user doesn't exist or has changed their username.
+        </p>
       </div>
     );
   }
@@ -140,11 +185,13 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
 
   const tier = compatibility ? getCompatibilityTier(compatibility.sharedSongs) : null;
 
+  const allStatsZero = tasteStats.heard === 0 && tasteStats.liked === 0 && tasteStats.disliked === 0 && tasteStats.want === 0;
+
   return (
     <>
-      <div className="flex flex-col min-h-full">
+      <div className="flex flex-col mx-auto max-w-6xl w-full" style={{ minHeight: "calc(100vh - 57px)" }}>
         {/* Banner */}
-        <div className="relative w-full aspect-[3/1] bg-black overflow-hidden">
+        <div className="relative w-full aspect-[16/9] md:aspect-[3/1] bg-black overflow-hidden">
           {profile.banner_url ? (
             <img
               src={profile.banner_url}
@@ -153,126 +200,154 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-black">
-              <span className="text-4xl md:text-5xl font-['Instrument_Serif'] italic text-primary">
+              <span className="text-4xl md:text-5xl font-extrabold tracking-tight text-primary">
                 #d.You
               </span>
             </div>
           )}
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background/80 to-transparent" />
         </div>
 
-        {/* Avatar */}
-        <div className="px-4 -mt-12">
-          <div className="h-24 w-24 rounded-full overflow-hidden border-[3px] border-background bg-muted shrink-0">
-            {profile.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt={resolvedName}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="h-full w-full flex items-center justify-center text-2xl font-bold text-muted-foreground">
-                {resolvedName.slice(0, 1).toUpperCase()}
-              </div>
+        <div className="max-w-2xl mx-auto w-full px-4">
+          {/* Avatar */}
+          <div className="-mt-10 md:-mt-12">
+            <div className="h-28 w-28 rounded-full overflow-hidden ring-2 ring-background bg-muted shrink-0">
+              {profile.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt={resolvedName}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-2xl font-bold text-muted-foreground">
+                  {resolvedName.slice(0, 1).toUpperCase()}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Name block */}
+          <div className="pt-2 space-y-1">
+            <div className="text-xl font-bold">
+              {resolvedName}
+            </div>
+            <div className="text-base text-muted-foreground">
+              @{profile.username}
+            </div>
+            {profile.pronouns && (
+              <p className="text-base text-muted-foreground">
+                {profile.pronouns}
+              </p>
+            )}
+            {profile.bio && (
+              <p className="text-base text-foreground/80 pt-1">
+                {profile.bio}
+              </p>
+            )}
+            {locationText && (
+              <p className="text-base text-muted-foreground">
+                {locationText}
+              </p>
             )}
           </div>
-        </div>
 
-        {/* Info */}
-        <div className="px-4 pt-2 space-y-1">
-          <div className="text-sm text-muted-foreground">
-            @{profile.username}
+          {/* Action bar — primary CTA */}
+          <div className="flex items-center justify-between py-3 border-t border-b border-border/10 mt-3">
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setFollowSheet("following")}
+                aria-label={`${followingCount} following`}
+                className="text-sm hover:underline cursor-pointer focus-visible:ring-1 focus-visible:ring-ring rounded-lg"
+              >
+                <span className="font-semibold tabular-nums">{followingCount}</span>{" "}
+                <span className="text-muted-foreground">following</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFollowSheet("followers")}
+                aria-label={`${followerCount} followers`}
+                className="text-sm hover:underline cursor-pointer focus-visible:ring-1 focus-visible:ring-ring rounded-lg"
+              >
+                <span className="font-semibold tabular-nums">{followerCount}</span>{" "}
+                <span className="text-muted-foreground">followers</span>
+              </button>
+            </div>
+            {viewerId && !isOwnProfile && (
+              <Button
+                onClick={handleFollowToggle}
+                disabled={followLoading}
+                variant={isFollowing ? "secondary" : "default"}
+                size="sm"
+                aria-label={isFollowing ? `Unfollow @${profile.username}` : `Follow @${profile.username}`}
+                className="rounded-lg px-5 h-9 text-sm font-medium min-w-[90px] active:scale-[0.97] transition-all duration-200"
+              >
+                {followLoading ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    <span>{isFollowing ? "Unfollowing" : "Following"}&hellip;</span>
+                  </span>
+                ) : isFollowing ? "Following" : "Follow"}
+              </Button>
+            )}
           </div>
-          {!profile.display_name_visible && profile.display_name ? (
-            <div className="text-sm text-muted-foreground italic">
-              Display name hidden
-            </div>
-          ) : (
-            <div className="text-xl font-semibold">
-              {profile.display_name ?? profile.username}
-            </div>
-          )}
-          {profile.pronouns && (
-            <p className="text-sm text-muted-foreground">
-              {profile.pronouns}
-            </p>
-          )}
-          {profile.bio && (
-            <p className="text-base text-foreground/80 pt-1">
-              {profile.bio}
-            </p>
-          )}
-          {locationText && (
-            <p className="text-sm text-muted-foreground">
-              {locationText}
-            </p>
-          )}
-        </div>
 
-        {/* Compatibility */}
-        {compatibility && compatibility.sharedSongs > 0 && (
-          <div className="px-4 pt-3">
-            <div className="rounded-xl border bg-raised p-3 space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">
-                  Compatibility
-                </span>
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${TIER_COLORS[tier ?? "Low"]}`}>
-                  {tier}
-                </span>
+          {/* #d.taste section */}
+          <div className="pt-4 pb-1">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+              #d.taste
+            </span>
+          </div>
+          <ProfileStatsRow stats={tasteStats} loading={statsLoading} />
+          {allStatsZero && !isOwnProfile && (
+            <p className="text-xs text-muted-foreground text-center py-1">
+              No activity logged yet.
+            </p>
+          )}
+
+          {/* Compatibility */}
+          {compatibility && compatibility.sharedSongs > 0 && !isOwnProfile && (
+            <div className="pt-4">
+              <div className="rounded-2xl border bg-raised p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase">
+                    Compatibility
+                  </span>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${TIER_COLORS[tier ?? "Low"]}`}>
+                    {tier}
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  You share {compatibility.sharedSongs} songs with @{profile.username}
+                </p>
+                <div className="grid grid-cols-3 gap-3 mt-3">
+                  <div className="text-center">
+                    <div className="text-lg font-semibold tabular-nums">{compatibility.sharedHeard}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Heard</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-semibold tabular-nums text-[--color-like]">{compatibility.sharedLiked}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Liked</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-semibold tabular-nums">{compatibility.sharedDisliked}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Disliked</div>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-border/20">
+                  <Link
+                    to="/home"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Explore shared music →
+                  </Link>
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div>
-                  <div className="text-lg font-semibold">{compatibility.sharedHeard}</div>
-                  <div className="text-[10px] text-muted-foreground">Heard</div>
-                </div>
-                <div>
-                  <div className="text-lg font-semibold text-red-500">{compatibility.sharedLiked}</div>
-                  <div className="text-[10px] text-muted-foreground">Liked</div>
-                </div>
-                <div>
-                  <div className="text-lg font-semibold">{compatibility.sharedDisliked}</div>
-                  <div className="text-[10px] text-muted-foreground">Disliked</div>
-                </div>
-              </div>
             </div>
-          </div>
-        )}
-
-        {/* Stats */}
-        <div className="px-4 pt-3 flex gap-4">
-          <button
-            type="button"
-            onClick={() => setFollowSheet("following")}
-            className="text-sm hover:underline cursor-pointer"
-          >
-            <span className="font-semibold">{followingCount}</span>{" "}
-            <span className="text-muted-foreground">following</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setFollowSheet("followers")}
-            className="text-sm hover:underline cursor-pointer"
-          >
-            <span className="font-semibold">{followerCount}</span>{" "}
-            <span className="text-muted-foreground">followers</span>
-          </button>
+          )}
         </div>
 
-        {/* Follow/Unfollow */}
-        {viewerId && !isOwnProfile && (
-          <div className="px-4 pt-4">
-            <Button
-              onClick={handleFollowToggle}
-              disabled={followLoading}
-              variant={isFollowing ? "secondary" : "default"}
-              className="w-full h-11 rounded-lg active:scale-[0.97]"
-            >
-              {followLoading ? "..." : isFollowing ? "Unfollow" : "Follow"}
-            </Button>
-          </div>
-        )}
-
-        <div className="flex-1" />
+        <div className="flex-1 min-h-[80px] md:min-h-[40px]" />
       </div>
 
       <FollowListSheet
