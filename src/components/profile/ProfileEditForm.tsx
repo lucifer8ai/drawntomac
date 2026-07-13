@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { BannerUpload } from "./BannerUpload";
 import { AvatarUpload } from "./AvatarUpload";
 import { LocationPicker } from "./LocationPicker";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface EditFormProps {
@@ -92,7 +93,19 @@ export function ProfileEditForm({
         bannerUrl={bannerUrl}
         onUpload={handleBannerUpload}
         disabled={saving}
-        onRemove={() => {
+        onRemove={async () => {
+          try {
+            const { data: session } = await supabase.auth.getSession();
+            if (session.session?.access_token) {
+              await fetch(
+                `/api/upload?userId=${userId}&bucket=banners`,
+                {
+                  method: "DELETE",
+                  headers: { Authorization: `Bearer ${session.session.access_token}` },
+                },
+              );
+            }
+          } catch { /* best-effort */ }
           setBannerUrl(null);
           toast.success("Banner removed");
         }}
@@ -104,7 +117,19 @@ export function ProfileEditForm({
           onUpload={handleAvatarUpload}
           disabled={saving}
           displayName={displayName || initial.username}
-          onRemove={() => {
+          onRemove={async () => {
+            try {
+              const { data: session } = await supabase.auth.getSession();
+              if (session.session?.access_token) {
+                await fetch(
+                  `/api/upload?userId=${userId}&bucket=avatars`,
+                  {
+                    method: "DELETE",
+                    headers: { Authorization: `Bearer ${session.session.access_token}` },
+                  },
+                );
+              }
+            } catch { /* best-effort */ }
             setAvatarUrl(null);
             toast.success("Avatar removed");
           }}

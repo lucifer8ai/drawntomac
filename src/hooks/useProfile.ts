@@ -82,15 +82,28 @@ export function useProfile(userId: string | null) {
   }, [fetchProfile, fetchStats]);
 
   async function uploadImage(bucket: "avatars" | "banners", file: File): Promise<string> {
-    const ext = file.name.split(".").pop() ?? "jpg";
-    const path = `${userId}/${bucket === "avatars" ? "avatar" : "banner"}.${ext}`;
-    const { error: uploadErr } = await supabase.storage
-      .from(bucket)
-      .upload(path, file, { upsert: true });
-    if (uploadErr) throw new Error(`Storage error (${bucket}): ${uploadErr.message}`);
+    const { data: session } = await supabase.auth.getSession();
+    const token = session?.session?.access_token;
+    if (!token) throw new Error("Not authenticated");
 
-    const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(path);
-    return publicUrl.publicUrl;
+    const formData = new FormData();
+    formData.append("userId", userId!);
+    formData.append("bucket", bucket);
+    formData.append("file", file);
+
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? "Failed to upload image. Please try again.");
+    }
+
+    const { url } = await res.json();
+    return url;
   }
 
   async function updateProfile(fields: ProfileUpdateFields): Promise<void> {
@@ -113,15 +126,11 @@ export function useProfile(userId: string | null) {
   }
 
   async function uploadBanner(file: File): Promise<string> {
-    const url = await uploadImage("banners", file);
-    await updateProfile({ banner_url: url });
-    return url;
+    return await uploadImage("banners", file);
   }
 
   async function uploadAvatar(file: File): Promise<string> {
-    const url = await uploadImage("avatars", file);
-    await updateProfile({ avatar_url: url });
-    return url;
+    return await uploadImage("avatars", file);
   }
 
   return {
