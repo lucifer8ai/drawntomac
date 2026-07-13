@@ -1,6 +1,6 @@
 const MUSICBRAINZ_BASE = "https://musicbrainz.org/ws/2";
 const USER_AGENT = "drawnto/1.0 (drawnTo.fm)";
-export const ALLOWED_COUNTRIES = ["IN", "US", "GB", "AU", "CA", "XW"];
+export const ALLOWED_COUNTRIES = ["IN", "US", "GB", "AU", "CA", "XW", "PK"];
 export const ALLOWED_ARTISTS = ["Anuv Jain", "Divine"];
 
 export interface MusicBrainzArtist {
@@ -159,33 +159,23 @@ export function parseRecording(recording: MusicBrainzRecording): ParsedMusicBrai
 
 async function musicbrainzFetch(path: string): Promise<Response> {
   const { checkRateLimit } = await import("./rate-limiter");
-  const allowed = await checkRateLimit("musicbrainz", 5, 3);
+  const allowed = await checkRateLimit("musicbrainz", 1, 1);
   if (!allowed) {
     throw new Error("MusicBrainz rate limit exceeded — slow down and retry.");
   }
 
   const url = `${MUSICBRAINZ_BASE}${path}`;
-  let lastErr: unknown;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const res = await fetch(url, {
-        headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
-      });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15_000);
 
-      if (res.status === 503) {
-        throw new Error("MusicBrainz is temporarily unavailable (503).");
-      }
-
-      return res;
-    } catch (err) {
-      lastErr = err;
-      if (attempt < 2) {
-        await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
-      }
-    }
+  try {
+    return await fetch(url, {
+      headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
   }
-
-  throw lastErr;
 }
 
 async function getSupabaseAdmin() {

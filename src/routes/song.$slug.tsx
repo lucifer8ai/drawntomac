@@ -15,6 +15,7 @@ import {
   ReviewList,
   Pagination,
 } from "@/components/song";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ReviewEntry } from "@/components/song";
 
 const REVIEWS_PER_PAGE = 10;
@@ -74,26 +75,38 @@ export const Route = createFileRoute("/song/$slug")({
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#000000", color: "white" }}>
-      <header
-        className="sticky top-0 z-30 border-b"
-        style={{
-          backgroundColor: "rgba(0,0,0,0.95)",
-          borderColor: "rgba(245,240,232,0.08)",
-          backdropFilter: "blur(12px)",
-        }}
-      >
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link to="/home" className="text-2xl font-black tracking-tight text-white">
+          <Link to="/home" className="text-2xl font-black tracking-tight text-foreground">
             #d.To
           </Link>
-          <Link to="/home" className="flex items-center gap-1 text-xs font-semibold" style={{ color: "#8A8276" }}>
+          <Link to="/home" className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
             <ArrowLeft size={16} />
             Back
           </Link>
         </div>
       </header>
       {children}
+    </div>
+  );
+}
+
+function ReviewSkeletons() {
+  return (
+    <div className="space-y-3">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="rounded-2xl border bg-raised p-4">
+          <div className="flex items-start gap-3">
+            <Skeleton className="h-9 w-9 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-3/4" />
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -107,12 +120,12 @@ function SongPage() {
   const [reviewPage, setReviewPage] = useState(1);
   const [loadingReviews, setLoadingReviews] = useState(true);
   const [myEntries, setMyEntries] = useState<{
-    heard: DiaryEntry[];
+    heard: DiaryEntry | null;
     want: DiaryEntry | null;
     like: DiaryEntry | null;
     dislike: DiaryEntry | null;
     review: DiaryEntry | null;
-  }>({ heard: [], want: null, like: null, dislike: null, review: null });
+  }>({ heard: null, want: null, like: null, dislike: null, review: null });
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
@@ -188,7 +201,7 @@ function SongPage() {
 
   const loadMyEntries = useCallback(async () => {
     if (!userId) {
-      setMyEntries({ heard: [], want: null, like: null, dislike: null, review: null });
+      setMyEntries({ heard: null, want: null, like: null, dislike: null, review: null });
       return;
     }
     const { data } = await supabase
@@ -198,7 +211,7 @@ function SongPage() {
       .eq("song_id", song.id)
       .order("created_at", { ascending: false });
 
-    const heard: DiaryEntry[] = [];
+    let heard: DiaryEntry | null = null;
     let want: DiaryEntry | null = null;
     let like: DiaryEntry | null = null;
     let dislike: DiaryEntry | null = null;
@@ -207,7 +220,7 @@ function SongPage() {
     (data ?? []).forEach((e) => {
       const entry = e as DiaryEntry;
       switch (entry.type) {
-        case "heard": heard.push(entry); break;
+        case "heard": heard = entry; break;
         case "want": want = entry; break;
         case "like": like = entry; break;
         case "dislike": dislike = entry; break;
@@ -239,12 +252,11 @@ function SongPage() {
     );
   }
 
+  const heardToday = myEntries.heard !== null;
+  const hasInteractions =
+    myEntries.like !== null || myEntries.dislike !== null || myEntries.review !== null;
+
   const totalPages = Math.max(1, Math.ceil(totalReviewCount / REVIEWS_PER_PAGE));
-  const totalEntries = myEntries.heard.length
-    + (myEntries.want ? 1 : 0)
-    + (myEntries.like ? 1 : 0)
-    + (myEntries.dislike ? 1 : 0)
-    + (myEntries.review ? 1 : 0);
 
   return (
     <Shell>
@@ -261,7 +273,6 @@ function SongPage() {
               song={{
                 title: song.title,
                 release_date: song.release_date,
-                country: song.country,
                 genre_tags: song.genre_tags,
                 preview_url: song.preview_url,
                 artist: song.artist,
@@ -271,14 +282,16 @@ function SongPage() {
             {!userId && <ReviewPrompt />}
 
             <div className="mt-5 flex flex-wrap gap-2">
-              <HeardButton
-                songId={song.id}
-                userId={userId}
-                entries={myEntries.heard}
-                wantEntry={myEntries.want}
-                onUpdate={loadMyEntries}
-              />
-              {totalEntries === 0 && (
+              {!myEntries.want && (
+                <HeardButton
+                  songId={song.id}
+                  userId={userId}
+                  entry={myEntries.heard}
+                  wantEntry={myEntries.want}
+                  onUpdate={loadMyEntries}
+                />
+              )}
+              {!heardToday && !hasInteractions && (
                 <WantButton
                   songId={song.id}
                   userId={userId}
@@ -288,7 +301,7 @@ function SongPage() {
               )}
             </div>
 
-            {userId && myEntries.heard.length > 0 && (
+            {userId && (heardToday || hasInteractions) && (
               <>
                 <LikeDislike
                   songId={song.id}
@@ -310,8 +323,8 @@ function SongPage() {
               </>
             )}
 
-            {userId && myEntries.heard.length === 0 && (
-              <p className="mt-4 text-sm" style={{ color: "#8A8276" }}>
+            {userId && !heardToday && !hasInteractions && !myEntries.want && (
+              <p className="mt-4 text-sm text-muted-foreground">
                 Log a listen to like, dislike, or review this song.
               </p>
             )}
@@ -323,7 +336,7 @@ function SongPage() {
             Reviews{totalReviewCount > 0 ? ` (${totalReviewCount})` : ""}
           </h2>
           {loadingReviews ? (
-            <div className="text-sm text-white/40">Loading…</div>
+            <ReviewSkeletons />
           ) : (
             <>
               <ReviewList reviews={reviews} userId={userId} onToggleLike={toggleLike} />

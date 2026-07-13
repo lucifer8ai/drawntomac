@@ -14,10 +14,19 @@ const badgeVariants = cva(
         destructive:
           "border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80",
         outline: "text-foreground",
+        heard: "border-transparent bg-heard/15 text-heard",
+        like: "border-transparent bg-like/15 text-like",
+        dislike: "border-transparent bg-dislike/15 text-dislike",
+        want: "border-transparent bg-want/15 text-want",
+      },
+      shape: {
+        default: "rounded-md",
+        pill: "rounded-full",
       },
     },
     defaultVariants: {
       variant: "default",
+      shape: "default",
     },
   },
 );
@@ -25,8 +34,8 @@ const badgeVariants = cva(
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
 
-function Badge({ className, variant, ...props }: BadgeProps) {
-  return <div className={cn(badgeVariants({ variant }), className)} {...props} />;
+function Badge({ className, variant, shape, ...props }: BadgeProps & { shape?: "default" | "pill" }) {
+  return <div className={cn(badgeVariants({ variant, shape }), className)} {...props} />;
 }
 
 export { Badge, badgeVariants };

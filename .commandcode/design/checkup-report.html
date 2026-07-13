@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Checkup — drawnTo</title>
+<style>
+  :root { --bg:#0a0a0c; --surface:#141418; --border:#2a2a30; --text:#e8e6e1; --muted:#8a8276; --amber:#d4a02c; --green:#4ade80; --red:#f87171; --blue:#60a5fa; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,sans-serif; line-height:1.6; padding:2rem; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.5rem; margin-bottom:1.5rem; }
+  h1 { font-size:1.5rem; margin-bottom:.25rem; }
+  h2 { font-size:1.1rem; color:var(--muted); margin-bottom:1rem; font-weight:400; }
+  .score-big { font-size:3rem; font-weight:700; color:var(--amber); margin:1rem 0; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { padding:.75rem .5rem; text-align:left; border-bottom:1px solid var(--border); }
+  th { color:var(--muted); font-weight:500; font-size:.85rem; }
+  .healthy { color:var(--green); }
+  .watch { color:var(--amber); }
+  .critical { color:var(--red); }
+  .finding { border-left:3px solid var(--border); padding:.75rem 1rem; margin:.75rem 0; background:rgba(255,255,255,.02); }
+  .finding.high { border-left-color:var(--red); }
+  .finding.watch { border-left-color:var(--amber); }
+  .prescription { background:rgba(96,165,250,.08); border:1px solid rgba(96,165,250,.2); border-radius:8px; padding:1rem; margin:.75rem 0; }
+  code { background:rgba(255,255,255,.06); padding:.15em .4em; border-radius:4px; font-size:.9em; }
+  .badge { display:inline-block; padding:.2em .6em; border-radius:6px; font-size:.8em; font-weight:600; }
+  .badge-good { background:rgba(74,222,128,.15); color:var(--green); }
+  .badge-warn { background:rgba(212,160,44,.15); color:var(--amber); }
+  .badge-info { background:rgba(96,165,250,.15); color:var(--blue); }
+</style>
+</head>
+<body>
+<h1>🩺 Design Checkup</h1>
+<h2>drawnTo — 2026-07-09</h2>
+
+<div class="score-big">40/60 <span style="font-size:.6em;vertical-align:middle;">Watch</span></div>
+
+<div class="card">
+<table>
+<tr><th>Vital Sign</th><th>Score</th><th>Status</th></tr>
+<tr><td>1. Intentionality</td><td><span class="healthy">10/10</span></td><td><span class="badge badge-good">Healthy</span></td></tr>
+<tr><td>2. Readability</td><td><span class="watch">5/10</span></td><td><span class="badge badge-warn">Watch</span></td></tr>
+<tr><td>3. Usability</td><td><span class="healthy">10/10</span></td><td><span class="badge badge-good">Healthy</span></td></tr>
+<tr><td>4. Responsiveness</td><td><span class="watch">5/10</span></td><td><span class="badge badge-warn">Watch</span></td></tr>
+<tr><td>5. Speed</td><td><span class="watch">5/10</span></td><td><span class="badge badge-warn">Watch</span></td></tr>
+<tr><td>6. Accessibility</td><td><span class="watch">5/10</span></td><td><span class="badge badge-warn">Watch</span></td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>Key Findings</h2>
+
+<div class="finding high">
+<strong>Body text 14px — below 16px minimum</strong>
+<p>EntryCard, DiaryCard, ReviewComposer, ReviewList, and others use <code>text-sm</code> (14px) for reading body text. Stat labels and BottomNav use <code>text-[10px]</code> — near-illegible. All body reading text should be at least <code>text-base</code> (16px).</p>
+</div>
+
+<div class="finding high">
+<strong>Missing aria-labels on icon-only buttons</strong>
+<p>Like (Heart), Dislike (ThumbsDown), and Pagination prev/next buttons have no <code>aria-label</code>. Screen reader users hear nothing. Also: empty <code>alt=""</code> on avatar and album art images — these convey identity and song context.</p>
+</div>
+
+<div class="finding watch">
+<strong>Images lack CLS-prevention attributes</strong>
+<p>Zero instances of <code>width</code>/<code>height</code> on <code>&lt;img&gt;</code> tags. No <code>loading="lazy"</code> except one search result. No <code>decoding="async"</code>. Every album art, avatar, and thumbnail load causes layout shift.</p>
+</div>
+
+<div class="finding watch">
+<strong>Touch targets below 44px</strong>
+<p>Pagination (40px), LikeDislike (~36px), Heard/Want (~36px), genre filter chips (~28px) all fall below the 44px minimum for comfortable touch interaction.</p>
+</div>
+
+<div class="finding watch">
+<strong>Opacity-reduced text fails contrast</strong>
+<p><code>text-muted-foreground/60</code> at ~3.8:1 fails WCAG AA 4.5:1. Stat labels at 10px + 40% opacity doubly fail.</p>
+</div>
+
+<div class="finding watch">
+<strong>Skipped heading level in DiscoverPage</strong>
+<p><code>DiscoverPage.tsx</code> uses only <code>&lt;h3&gt;</code> with no <code>&lt;h2&gt;</code> parent — heading hierarchy skips a level.</p>
+</div>
+</div>
+
+<div class="card">
+<h2>Prescriptions</h2>
+<div class="prescription"><strong>1. /design typeset</strong> — Bump body reading text from <code>text-sm</code> (14px) to <code>text-base</code> (16px). Fix heading hierarchy in DiscoverPage.</div>
+<div class="prescription"><strong>2. /design interaction</strong> — Add <code>aria-label</code> to icon-only buttons (Like, Dislike, Pagination). Add descriptive <code>alt</code> text to avatar and album art images.</div>
+<div class="prescription"><strong>3. /design finish</strong> — Add <code>width</code>/<code>height</code> attributes, <code>loading="lazy"</code>, and <code>decoding="async"</code> to all <code>&lt;img&gt;</code> tags.</div>
+<div class="prescription"><strong>4. /design responsive</strong> — Increase touch targets to 44px minimum for Pagination, LikeDislike, Heard/Want, genre chips.</div>
+<div class="prescription"><strong>5. /design recolor</strong> — Adjust <code>text-muted-foreground</code> opacity values so reduced-opacity text meets 4.5:1 contrast.</div>
+</div>
+
+<div class="card" style="margin-top:2rem;">
+<p style="color:var(--muted);font-size:.9rem;">The design foundation is strong — authored identity, excellent state handling. These Watch scores are targeted fixes, not structural redesign.</p>
+</div>
+</body>
+</html>

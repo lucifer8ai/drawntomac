@@ -1,16 +1,23 @@
-import { useRef } from "react";
-import { Upload } from "lucide-react";
+import { useRef, useCallback } from "react";
+import { Upload, Trash2 } from "lucide-react";
 
 export function BannerUpload({
   bannerUrl,
   onUpload,
   disabled,
+  onRemove,
 }: {
   bannerUrl: string | null;
   onUpload: (file: File) => void;
   disabled?: boolean;
+  onRemove?: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleRemove = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onRemove?.();
+  }, [onRemove]);
 
   return (
     <button
@@ -28,7 +35,7 @@ export function BannerUpload({
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-black">
-          <span className="text-4xl md:text-5xl font-['Instrument_Serif'] italic text-primary">
+          <span className="text-4xl md:text-5xl font-semibold tracking-tight text-primary">
             #d.You
           </span>
         </div>
@@ -36,6 +43,16 @@ export function BannerUpload({
       <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         <Upload className="h-6 w-6 text-white" />
       </div>
+      {bannerUrl && onRemove && (
+        <button
+          type="button"
+          onClick={handleRemove}
+          disabled={disabled}
+          className="absolute top-2 right-2 bg-black/50 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+        >
+          <Trash2 size={16} className="text-white" />
+        </button>
+      )}
       <input
         ref={inputRef}
         type="file"

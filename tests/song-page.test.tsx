@@ -1,172 +1,248 @@
-/**
- * Tests for song.$slug.tsx patterns and logic.
- * These verify the route file structure and data flow rather than
- * rendering the full component (which requires complex mocking of
- * supabase auth + TanStack router).
- */
 import { describe, it, expect } from "vitest";
+import { pickBestRelease, parseDisambiguation, ALLOWED_COUNTRIES } from "../src/lib/musicbrainz";
+import type { MusicBrainzRelease } from "../src/lib/musicbrainz";
 
-const REVIEW_EDIT_WINDOW_MS = 48 * 60 * 60 * 1000;
-
-function canEditReview(createdAt: string): boolean {
-  return new Date(createdAt).getTime() + REVIEW_EDIT_WINDOW_MS > Date.now();
-}
-
-describe("song page logic", () => {
-  describe("review edit window", () => {
-    it("allows editing within 48 hours", () => {
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-      expect(canEditReview(oneHourAgo)).toBe(true);
-    });
-
-    it("allows editing at exactly 47 hours", () => {
-      const fortySevenHoursAgo = new Date(Date.now() - 47 * 60 * 60 * 1000).toISOString();
-      expect(canEditReview(fortySevenHoursAgo)).toBe(true);
-    });
-
-    it("blocks editing after 48 hours", () => {
-      const fortyNineHoursAgo = new Date(Date.now() - 49 * 60 * 60 * 1000).toISOString();
-      expect(canEditReview(fortyNineHoursAgo)).toBe(false);
-    });
+describe("pickBestRelease", () => {
+  it("returns null for empty array", () => {
+    expect(pickBestRelease([])).toBeNull();
   });
 
-  describe("diary entry type segregation", () => {
-    it("correctly separates heard, want, like, dislike, review", () => {
-      const entries = [
-        { id: "1", type: "heard" as const, listened_on: "2026-01-01", body: null },
-        { id: "2", type: "heard" as const, listened_on: "2026-01-02", body: null },
-        { id: "3", type: "want" as const, body: null },
-        { id: "4", type: "like" as const, body: null },
-        { id: "5", type: "dislike" as const, body: null },
-        { id: "6", type: "review" as const, body: "Great song" },
-      ];
-
-      const heard = entries.filter((e) => e.type === "heard");
-      const want = entries.find((e) => e.type === "want") ?? null;
-      const like = entries.find((e) => e.type === "like") ?? null;
-      const dislike = entries.find((e) => e.type === "dislike") ?? null;
-      const review = entries.find((e) => e.type === "review") ?? null;
-
-      expect(heard).toHaveLength(2);
-      expect(want?.id).toBe("3");
-      expect(like?.id).toBe("4");
-      expect(dislike?.id).toBe("5");
-      expect(review?.body).toBe("Great song");
-    });
-
-    it("allows multiple heard entries per song", () => {
-      const heardEntries = [
-        { id: "h1", type: "heard" as const, listened_on: "2026-01-01" },
-        { id: "h2", type: "heard" as const, listened_on: "2026-01-02" },
-        { id: "h3", type: "heard" as const, listened_on: "2026-01-03" },
-      ];
-      expect(heardEntries).toHaveLength(3);
-      expect(new Set(heardEntries.map((e) => e.id)).size).toBe(3);
-    });
-
-    it("enforces only one want per user+song", () => {
-      const wantEntries = [{ id: "w1", type: "want" as const }];
-      expect(wantEntries).toHaveLength(1);
-    });
-
-    it("enforces only one like per user+song", () => {
-      const likeEntries = [{ id: "l1", type: "like" as const }];
-      expect(likeEntries).toHaveLength(1);
-    });
-
-    it("enforces only one dislike per user+song", () => {
-      const dislikeEntries = [{ id: "d1", type: "dislike" as const }];
-      expect(dislikeEntries).toHaveLength(1);
-    });
-
-    it("enforces only one review per user+song", () => {
-      const reviewEntries = [{ id: "rv1", type: "review" as const }];
-      expect(reviewEntries).toHaveLength(1);
-    });
+  it("returns the only release", () => {
+    const r: MusicBrainzRelease = { id: "1", title: "Test", date: "2024-01-01" };
+    expect(pickBestRelease([r])).toBe(r);
   });
 
-  describe("like/dislike mutual exclusion", () => {
-    function toggleSentiment(
-      current: { type: "like" | "dislike" } | null,
-      target: "like" | "dislike",
-    ): { type: "like" | "dislike" } | null {
-      if (current && current.type === target) return null;
-      return { type: target };
-    }
-
-    it("neutral → like", () => {
-      expect(toggleSentiment(null, "like")).toEqual({ type: "like" });
-    });
-
-    it("neutral → dislike", () => {
-      expect(toggleSentiment(null, "dislike")).toEqual({ type: "dislike" });
-    });
-
-    it("like → toggle off", () => {
-      expect(toggleSentiment({ type: "like" }, "like")).toBeNull();
-    });
-
-    it("dislike → toggle off", () => {
-      expect(toggleSentiment({ type: "dislike" }, "dislike")).toBeNull();
-    });
-
-    it("like → swap to dislike", () => {
-      expect(toggleSentiment({ type: "like" }, "dislike")).toEqual({ type: "dislike" });
-    });
-
-    it("dislike → swap to like", () => {
-      expect(toggleSentiment({ type: "dislike" }, "like")).toEqual({ type: "like" });
-    });
+  it("prefers official over promo", () => {
+    const official: MusicBrainzRelease = { id: "1", title: "A", status: "official" };
+    const promo: MusicBrainzRelease = { id: "2", title: "B", status: "promotion" };
+    expect(pickBestRelease([promo, official])?.id).toBe("1");
   });
 
-  describe("today detection for heard button", () => {
-    function heardToday(entries: Array<{ listened_on: string }>): boolean {
-      const today = new Date().toISOString().slice(0, 10);
-      return entries.some((e) => e.listened_on === today);
-    }
-
-    it("detects today's hear via listened_on", () => {
-      const today = new Date().toISOString().slice(0, 10);
-      expect(heardToday([{ listened_on: today }])).toBe(true);
-    });
-
-    it("does not detect yesterday's hear", () => {
-      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-      expect(heardToday([{ listened_on: yesterday }])).toBe(false);
-    });
-
-    it("returns false for empty entries", () => {
-      expect(heardToday([])).toBe(false);
-    });
+  it("with same status, picks newer date", () => {
+    const old: MusicBrainzRelease = { id: "1", title: "A", status: "official", date: "2020-01-01" };
+    const recent: MusicBrainzRelease = { id: "2", title: "B", status: "official", date: "2024-01-01" };
+    expect(pickBestRelease([old, recent])?.id).toBe("2");
   });
 
-  describe("want-to-hear visibility", () => {
-    function wantVisible(entries: Array<{ type: string; listened_on?: string }>): boolean {
-      return entries.length === 0;
-    }
+  it("penalizes hi-res disambiguation", () => {
+    const normal: MusicBrainzRelease = { id: "1", title: "A", status: "official" };
+    const hiRes: MusicBrainzRelease = { id: "2", title: "B", status: "official", disambiguation: "24-bit / 96 kHz" };
+    expect(pickBestRelease([hiRes, normal])?.id).toBe("1");
+  });
 
-    it("visible when no entries exist", () => {
-      expect(wantVisible([])).toBe(true);
-    });
+  it("favors ALLOWED_COUNTRIES releases", () => {
+    const foreign: MusicBrainzRelease = { id: "1", title: "A", status: "official", country: "JP" };
+    const allowed: MusicBrainzRelease = { id: "2", title: "B", status: "official", country: "US" };
+    expect(pickBestRelease([foreign, allowed])?.id).toBe("2");
+  });
+});
 
-    it("hidden after heard is logged", () => {
-      expect(wantVisible([{ type: "heard", listened_on: "2026-01-01" }])).toBe(false);
-    });
+describe("parseDisambiguation", () => {
+  it("detects explicit", () => {
+    expect(parseDisambiguation("[explicit]").explicit).toBe(true);
+    expect(parseDisambiguation("some text [Explicit] more").explicit).toBe(true);
+  });
 
-    it("hidden when a review exists", () => {
-      expect(wantVisible([{ type: "review" }])).toBe(false);
-    });
+  it("detects clean", () => {
+    expect(parseDisambiguation("[clean]").clean).toBe(true);
+    expect(parseDisambiguation("[Clean] version").clean).toBe(true);
+  });
 
-    it("hidden when like exists", () => {
-      expect(wantVisible([{ type: "like" }])).toBe(false);
-    });
+  it("detects hi-res", () => {
+    expect(parseDisambiguation("24-bit / 96 kHz").hiRes).toBe(true);
+    expect(parseDisambiguation("24-bit/96 kHz").hiRes).toBe(true);
+  });
 
-    it("hidden when want + heard both exist (shouldn't happen but tests the logic)", () => {
-      expect(wantVisible([{ type: "want" }, { type: "heard" }])).toBe(false);
-    });
+  it("returns false for everything on null/undefined", () => {
+    expect(parseDisambiguation(null)).toEqual({ explicit: false, clean: false, hiRes: false });
+    expect(parseDisambiguation(undefined)).toEqual({ explicit: false, clean: false, hiRes: false });
+  });
+});
 
-    it("visible after unhearing if no other entries remain", () => {
-      expect(wantVisible([])).toBe(true);
-    });
+describe("ALLOWED_COUNTRIES", () => {
+  it("includes IN, US, GB, AU, CA, XW", () => {
+    expect(ALLOWED_COUNTRIES).toContain("IN");
+    expect(ALLOWED_COUNTRIES).toContain("US");
+    expect(ALLOWED_COUNTRIES).toContain("GB");
+    expect(ALLOWED_COUNTRIES).toContain("AU");
+    expect(ALLOWED_COUNTRIES).toContain("CA");
+    expect(ALLOWED_COUNTRIES).toContain("XW");
+  });
+});
+
+describe("diary entry type segregation", () => {
+  it("correctly separates heard, want, like, dislike, review", () => {
+    const entries = [
+      { id: "1", type: "heard" as const, body: null },
+      { id: "3", type: "want" as const, body: null },
+      { id: "4", type: "like" as const, body: null },
+      { id: "5", type: "dislike" as const, body: null },
+      { id: "6", type: "review" as const, body: "Great song" },
+    ];
+
+    const heard = entries.find((e) => e.type === "heard") ?? null;
+    const want = entries.find((e) => e.type === "want") ?? null;
+    const like = entries.find((e) => e.type === "like") ?? null;
+    const dislike = entries.find((e) => e.type === "dislike") ?? null;
+    const review = entries.find((e) => e.type === "review") ?? null;
+
+    expect(heard?.id).toBe("1");
+    expect(want?.id).toBe("3");
+    expect(like?.id).toBe("4");
+    expect(dislike?.id).toBe("5");
+    expect(review?.body).toBe("Great song");
+  });
+
+  it("each type is only one per user+song (lookup pattern)", () => {
+    // With the new design: find first match, null if none
+    const entries = [{ id: "h1", type: "heard" as const }];
+    const heard = entries.find((e) => e.type === "heard") ?? null;
+    expect(heard?.id).toBe("h1");
+
+    const want = entries.find((e) => e.type === "want") ?? null;
+    expect(want).toBeNull();
+  });
+
+  it("enforces only one want per user+song", () => {
+    const wantEntries = [{ id: "w1", type: "want" as const }];
+    // Only one should exist
+    const want = wantEntries.find((e) => e.type === "want") ?? null;
+    expect(want).not.toBeNull();
+    expect(wantEntries.filter((e) => e.type === "want")).toHaveLength(1);
+  });
+
+  it("enforces only one like/dislike per user+song", () => {
+    const entries = [{ id: "l1", type: "like" as const }];
+    expect(entries.find((e) => e.type === "like")?.id).toBe("l1");
+    expect(entries.find((e) => e.type === "dislike")).toBeUndefined();
+  });
+
+  it("enforces only one review per user+song", () => {
+    const entries = [{ id: "r1", type: "review" as const, body: "nice" }];
+    expect(entries.filter((e) => e.type === "review")).toHaveLength(1);
+  });
+});
+
+describe("sentiment toggle behavior (like/dislike mutual exclusion)", () => {
+  function toggleSentiment(
+    existing: { type: "like" | "dislike" } | null,
+    target: "like" | "dislike",
+  ): { type: "like" | "dislike" } | null {
+    if (existing?.type === target) return null;
+    return { type: target };
+  }
+
+  it("like → unlike (toggle off)", () => {
+    expect(toggleSentiment({ type: "like" }, "like")).toBeNull();
+  });
+
+  it("no like → like (toggle on)", () => {
+    expect(toggleSentiment(null, "like")).toEqual({ type: "like" });
+  });
+
+  it("dislike → unlike (toggle off)", () => {
+    expect(toggleSentiment({ type: "dislike" }, "dislike")).toBeNull();
+  });
+
+  it("like → swap to dislike", () => {
+    expect(toggleSentiment({ type: "like" }, "dislike")).toEqual({ type: "dislike" });
+  });
+
+  it("dislike → swap to like", () => {
+    expect(toggleSentiment({ type: "dislike" }, "like")).toEqual({ type: "like" });
+  });
+});
+
+describe("heard detection (presence check)", () => {
+  function isHeard(entry: { type: string } | null): boolean {
+    return entry !== null && entry.type === "heard";
+  }
+
+  it("detects heard when entry exists", () => {
+    expect(isHeard({ type: "heard" })).toBe(true);
+  });
+
+  it("returns false when entry is null", () => {
+    expect(isHeard(null)).toBe(false);
+  });
+
+  it("returns false for non-heard entries", () => {
+    expect(isHeard({ type: "want" })).toBe(false);
+    expect(isHeard({ type: "like" })).toBe(false);
+    expect(isHeard({ type: "review" })).toBe(false);
+  });
+});
+
+describe("want-to-hear visibility", () => {
+  function wantVisible(
+    heard: { type: string } | null,
+    like: { type: string } | null,
+    review: { type: string } | null,
+  ): boolean {
+    const hasInteractions = like !== null || review !== null;
+    return heard === null && !hasInteractions;
+  }
+
+  it("visible when no entries exist", () => {
+    expect(wantVisible(null, null, null)).toBe(true);
+  });
+
+  it("hidden after heard is logged", () => {
+    expect(wantVisible({ type: "heard" }, null, null)).toBe(false);
+  });
+
+  it("hidden when a review exists", () => {
+    expect(wantVisible(null, null, { type: "review" })).toBe(false);
+  });
+
+  it("hidden when like exists", () => {
+    expect(wantVisible(null, { type: "like" }, null)).toBe(false);
+  });
+
+  it("hidden when heard + like exist (shouldn't happen but tests the logic)", () => {
+    expect(wantVisible({ type: "heard" }, { type: "like" }, null)).toBe(false);
+  });
+});
+
+describe("heard button visibility", () => {
+  function heardVisible(want: { type: string } | null): boolean {
+    return want === null;
+  }
+
+  it("visible when want is absent", () => {
+    expect(heardVisible(null)).toBe(true);
+  });
+
+  it("hidden when want is active", () => {
+    expect(heardVisible({ type: "want" })).toBe(false);
+  });
+});
+
+describe("like/dislike/review visibility", () => {
+  function showInteractions(
+    heard: { type: string } | null,
+    like: { type: string } | null,
+    dislike: { type: string } | null,
+    review: { type: string } | null,
+  ): boolean {
+    const heardToday = heard !== null;
+    const hasInteractions = like !== null || dislike !== null || review !== null;
+    return heardToday || hasInteractions;
+  }
+
+  it("shows when heard exists", () => {
+    expect(showInteractions({ type: "heard" }, null, null, null)).toBe(true);
+  });
+
+  it("shows when un-heard but has prior like", () => {
+    expect(showInteractions(null, { type: "like" }, null, null)).toBe(true);
+  });
+
+  it("shows when un-heard but has prior review", () => {
+    expect(showInteractions(null, null, null, { type: "review" })).toBe(true);
+  });
+
+  it("hidden when clean slate", () => {
+    expect(showInteractions(null, null, null, null)).toBe(false);
   });
 });

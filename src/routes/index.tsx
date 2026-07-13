@@ -1,122 +1,152 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { getArtistImages } from "@/lib/spotify.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-const artistImagesQuery = queryOptions({
-  queryKey: ["spotify-collage-images"],
-  queryFn: () => getArtistImages(),
-  staleTime: 1000 * 60 * 60,
-  // Refetch when the previously cached response has no images (e.g. earlier
-  // token failure). Once we have images, no re-fetching needed.
-  refetchOnMount: (query) => {
-    const data = query.state.data as { images?: string[] } | undefined;
-    return !data?.images || data.images.length === 0;
-  },
-});
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "#drawnto — true music chooses you" },
+      { title: "#drawnTo — i don't just listen, i feel it" },
       {
         name: "description",
         content:
-          "Sign in to #drawnto — choose your music and your community. A platform for artists and listeners.",
+          "#drawnTo — a space for people who feel music deeply. Log, review, and find your people.",
       },
-      { property: "og:title", content: "#drawnto — true music chooses you" },
+      { property: "og:title", content: "#drawnTo — i don't just listen, i feel it" },
       {
         property: "og:description",
-        content: "Choose your music and your community.",
+        content: "A space for people who feel music deeply.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(artistImagesQuery),
   component: AuthPage,
 });
 
-// Deterministic pseudo-random for stable layout per-index
-function rand(seed: number) {
-  const x = Math.sin(seed * 9301 + 49297) * 233280;
-  return x - Math.floor(x);
+// --- Legendary Song Wall — dense typographic texture bridging eras ---
+
+const LEGENDARY_SONGS = [
+  "Bohemian Rhapsody", "Billie Jean", "Like a Prayer", "Purple Rain",
+  "Superstition", "Dreams", "Fast Car", "Smells Like Teen Spirit",
+  "Juicy", "Alright", "Redbone", "HUMBLE.", "Good Days",
+  "N95", "Bad Habit", "WAP", "Blinding Lights", "Sticky",
+  "Not Like Us", "Espresso", "BIRDS OF A FEATHER", "Pink Pony Club",
+  "HOT TO GO!", "A Bar Song", "Please Please Please", "Million Dollar Baby",
+  "What Was I Made For?", "Flowers", "Anti-Hero", "As It Was",
+  "Levitating", "Old Town Road", "thank u, next", "SICKO MODE",
+  "God's Plan", "Bodak Yellow", "Formation", "Alright",
+  "Runaway", "Nights", "Swimming Pools", "Alright",
+  "Paper Planes", "Dancing On My Own", "We Found Love", "Royals",
+  "Get Lucky", "Uptown Funk", "Rolling in the Deep", "Rehab",
+  "Seven Nation Army", "Mr. Brightside", "Hey Ya!", "Lose Yourself",
+  "Empire State of Mind", "Pursuit of Happiness", "XO Tour Llif3", "Lucid Dreams",
+  "SICKO MODE", "rockstar", "This Is America", "Old Town Road",
+  "Hotline Bling", "Thinking Out Loud", "Shake It Off", "Rolling in the Deep",
+  "Need You Now", "Use Somebody", "Chasing Cars", "Yellow",
+  "Wonderwall", "Creep", "Zombie", "Linger",
+  "No Scrubs", "Waterfalls", "Killing Me Softly", "I Will Always Love You",
+  "Run the World", "Single Ladies", "Cranes in the Sky", "Formation",
+].join(" · ").repeat(3);
+
+function ListenerWall() {
+  return (
+    <div className="relative h-full w-full overflow-hidden select-none" style={{ backgroundColor: "oklch(0.05 0.005 280)" }}>
+      {/* Subtle static texture overlay */}
+      <div
+        className="pointer-events-none absolute inset-0 z-10"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E")`,
+          backgroundRepeat: "repeat",
+          backgroundSize: "128px 128px",
+        }}
+      />
+
+      {/* Grid — record sleeve layout lines */}
+      <div className="absolute inset-0 opacity-[0.04]">
+        {Array.from({ length: 20 }, (_, i) => (
+          <div key={`h-${i}`} className="absolute left-0 right-0" style={{ top: `${(i / 19) * 100}%`, height: "1px", backgroundColor: "oklch(0.90 0.01 90)" }} />
+        ))}
+        {[8, 22, 38, 52, 68, 78, 92].map((x, i) => (
+          <div key={`v-${i}`} className="absolute top-0 bottom-0" style={{ left: `${x}%`, width: "1px", backgroundColor: "oklch(0.90 0.01 90)" }} />
+        ))}
+      </div>
+
+      {/* Accent bars — understated */}
+      <div className="absolute top-0 left-0 right-0 h-[3px] opacity-60" style={{ backgroundColor: "oklch(0.85 0 0)" }} />
+      <div className="absolute bottom-0 left-0 right-0 h-[3px] opacity-40" style={{ backgroundColor: "oklch(0.85 0 0)" }} />
+
+      {/* Dense song names — the wall of music */}
+      <div
+        className="pointer-events-none absolute inset-0 overflow-hidden opacity-70"
+        style={{
+          fontSize: "clamp(10px, 1.6vw, 15px)",
+          lineHeight: "2.2",
+          letterSpacing: "0.05em",
+          color: "oklch(0.90 0.01 90)",
+          textAlign: "justify",
+          wordBreak: "break-all",
+          padding: "4% 3%",
+          fontWeight: 900,
+        }}
+      >
+        {LEGENDARY_SONGS}
+      </div>
+
+      {/* Glowing pulse — the community heartbeat */}
+      <div className="absolute left-[52%] top-[55%] -translate-x-1/2 -translate-y-1/2 z-20">
+        <div
+          className="h-3 w-3 rounded-full"
+          style={{
+            backgroundColor: "oklch(0.85 0 0)",
+            boxShadow: "0 0 28px 6px oklch(0.85 0 0 / 0.5), 0 0 70px 14px oklch(0.85 0 0 / 0.18)",
+          }}
+        />
+        <div
+          className="absolute -inset-4 animate-pulse rounded-full"
+          style={{
+            border: "1.5px solid oklch(0.85 0 0 / 0.3)",
+            animationDuration: "3s",
+          }}
+        />
+        <div
+          className="absolute -inset-8 animate-pulse rounded-full"
+          style={{
+            border: "1px solid oklch(0.85 0 0 / 0.12)",
+            animationDuration: "4s",
+          }}
+        />
+      </div>
+
+      {/* Stat callouts */}
+      <div className="absolute bottom-[16%] left-[8%] z-20">
+        <div className="text-[10px] uppercase tracking-[0.15em] opacity-40" style={{ color: "oklch(0.90 0.01 90)" }}>
+          Songs Logged
+        </div>
+        <div className="text-xl font-bold opacity-60" style={{ fontWeight: 800, letterSpacing: "-0.02em", color: "oklch(0.85 0 0)" }}>
+          2.4M+
+        </div>
+      </div>
+      <div className="absolute right-[10%] top-[18%] text-right z-20">
+        <div className="text-[10px] uppercase tracking-[0.15em] opacity-40" style={{ color: "oklch(0.90 0.01 90)" }}>
+          Honest Reviews
+        </div>
+        <div className="text-xl font-bold opacity-60" style={{ fontWeight: 800, letterSpacing: "-0.02em", color: "oklch(0.85 0 0)" }}>
+          180K+
+        </div>
+      </div>
+    </div>
+  );
 }
 
-type Tile = {
-  src: string;
-  top: number;
-  left: number;
-  size: number;
-  rotate: number;
-  z: number;
-};
+// --- Auth Form ---
 
-function buildTiles(images: string[], replacements: string[] = []): Tile[] {
-  // Merge primary + replacements, dedupe, so every tile is a unique image.
-  const unique: string[] = [];
-  const seen = new Set<string>();
-  for (const src of [...images, ...replacements]) {
-    if (!src || seen.has(src)) continue;
-    seen.add(src);
-    unique.push(src);
-  }
-  if (unique.length === 0) return [];
-
-  // Scatter organically across a 4-col x ceil(N/4)-row loose grid.
-  const cols = 4;
-  const rows = Math.max(3, Math.ceil(unique.length / cols));
-  const cellW = 100 / cols;
-  const cellH = 100 / rows;
-  const tiles: Tile[] = [];
-  for (let i = 0; i < unique.length; i++) {
-    const r = Math.floor(i / cols);
-    const c = i % cols;
-    const seed = i + 1;
-    const jitterX = (rand(seed) - 0.5) * cellW * 0.7;
-    const jitterY = (rand(seed + 11) - 0.5) * cellH * 0.7;
-    const sizeVar = 15 + rand(seed + 23) * 12;
-    const rot = (rand(seed + 37) - 0.5) * 18;
-    tiles.push({
-      src: unique[i],
-      left: c * cellW + cellW / 2 + jitterX,
-      top: r * cellH + cellH / 2 + jitterY,
-      size: sizeVar,
-      rotate: rot,
-      z: Math.floor(rand(seed + 51) * 10),
-    });
-  }
-  return tiles;
-}
-
-
-function AuthPage() {
-  const { data } = useSuspenseQuery(artistImagesQuery);
-  const tiles = useMemo(() => buildTiles(data.images, data.replacements ?? []), [data.images, data.replacements]);
+function AuthForm() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        navigate({ to: "/home" });
-      } else {
-        setChecking(false);
-      }
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
-        navigate({ to: "/home" });
-      }
-    });
-    return () => sub.subscription.unsubscribe();
-  }, [navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -142,185 +172,164 @@ function AuthPage() {
   }
 
   async function handleGoogle() {
-  if (busy) return;
-  setBusy(true);
-  try {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin + "/home" },
-    });
-    if (error) toast.error(error.message ?? "Google sign-in failed");
-  } finally {
-    setBusy(false);
+    if (busy) return;
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin + "/auth/callback" },
+      });
+      if (error) toast.error(error.message ?? "Google sign-in failed");
+    } finally {
+      setBusy(false);
+    }
   }
-}
 
+  return (
+    <div className="flex h-full flex-col justify-center px-[clamp(2rem,10%,5rem)] py-12">
+      <h1 className="mb-1 text-[clamp(2rem,4vw,2.75rem)] font-extrabold italic tracking-tight" style={{ color: "oklch(0.85 0 0)" }}>
+        #drawnTo
+      </h1>
+      <p className="mb-3 font-light italic text-[clamp(1rem,1.5vw,1.25rem)] text-muted-foreground">
+        i don&apos;t just listen, i feel it
+      </p>
+      <p className="mb-8 text-xs font-medium tracking-wide uppercase text-muted-foreground/60">
+        Log · Review · Connect
+      </p>
 
-if (checking) return null;  
-return (
-    <main className="relative min-h-screen w-full overflow-hidden" style={{ backgroundColor: "#0D0A06" }}>
-      {/* Collage layer */}
-      <div className="pointer-events-none absolute inset-0">
-        {tiles.map((t, idx) => (
-          <img
-            key={idx}
-            src={t.src}
-            alt=""
-            aria-hidden
-            loading="lazy"
-            className="absolute rounded-2xl object-cover shadow-2xl"
-            style={{
-              top: `${t.top}%`,
-              left: `${t.left}%`,
-              width: `clamp(120px, ${t.size}vw, 320px)`,
-              height: `clamp(120px, ${t.size}vw, 320px)`,
-              transform: `translate(-50%, -50%) rotate(${t.rotate}deg)`,
-              zIndex: t.z,
-            }}
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = "none";
-            }}
-          />
+      <div className="mb-8 grid grid-cols-2 rounded-full bg-input/50 p-1">
+        {(["signin", "signup"] as const).map((opt) => (
+          <button
+            type="button"
+            key={opt}
+            type="button"
+            onClick={() => setMode(opt)}
+            className={`rounded-full py-2.5 text-sm font-semibold transition-all ${
+              mode === opt ? "bg-foreground text-background" : "bg-transparent text-foreground/50"
+            }`}
+          >
+            {opt === "signin" ? "Sign in" : "Sign up"}
+          </button>
         ))}
       </div>
 
-      {/* Dark overlay */}
-      <div
-        className="absolute inset-0"
-        style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
-        aria-hidden
-      />
-
-      {/* Content */}
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-10">
-        <h1
-          className="mb-8 max-w-3xl text-center font-black tracking-tight"
-          style={{
-            fontSize: "clamp(2rem, 5.5vw, 4.5rem)",
-            lineHeight: 1.05,
-            letterSpacing: "-0.02em",
-            color: "#E8624A",
-            textShadow: "0 2px 16px rgba(0,0,0,0.95)",
-          }}
-        >
-          Choose your music
-          <br />
-          and your community
-        </h1>
-
-        <div
-          className="w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md"
-          style={{
-            backgroundColor: "rgba(26, 21, 16, 0.85)",
-            border: "1px solid rgba(255,255,255,0.08)",
-          }}
-        >
-          {/* Tabs */}
-          <div
-            className="mb-6 grid grid-cols-2 rounded-full p-1"
-            style={{ backgroundColor: "rgba(255,255,255,0.06)" }}
-          >
-            <button
-              type="button"
-              onClick={() => setMode("signin")}
-              className="rounded-full py-2 text-sm font-semibold transition-colors"
-              style={{
-                backgroundColor: mode === "signin" ? "#0D0A06" : "transparent",
-                color: mode === "signin" ? "#fff" : "rgba(255,255,255,0.6)",
-              }}
-            >
-              Sign in
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("signup")}
-              className="rounded-full py-2 text-sm font-semibold transition-colors"
-              style={{
-                backgroundColor: mode === "signup" ? "#0D0A06" : "transparent",
-                color: mode === "signup" ? "#fff" : "rgba(255,255,255,0.6)",
-              }}
-            >
-              Sign up
-            </button>
-          </div>
-
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="space-y-1.5">
-              <label htmlFor="email" className="text-xs font-medium text-white/70">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@drawnto.fm"
-                className="w-full rounded-xl px-4 py-3 text-sm text-white outline-none transition focus:ring-2"
-                style={{
-                  backgroundColor: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                }}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="password" className="text-xs font-medium text-white/70">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                placeholder="••••••••"
-                className="w-full rounded-xl px-4 py-3 text-sm text-white outline-none transition focus:ring-2"
-                style={{
-                  backgroundColor: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                }}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={busy}
-              className="w-full rounded-xl py-3 text-sm font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-60"
-              style={{ backgroundColor: "#E8624A" }}
-            >
-              {busy ? "…" : mode === "signin" ? "Sign in" : "Sign up"}
-            </button>
-
-            <div className="flex items-center gap-3 py-1">
-              <div className="h-px flex-1" style={{ backgroundColor: "rgba(255,255,255,0.1)" }} />
-              <span className="text-xs uppercase tracking-widest text-white/40">or</span>
-              <div className="h-px flex-1" style={{ backgroundColor: "rgba(255,255,255,0.1)" }} />
-            </div>
-
-            <button
-              type="button"
-              onClick={handleGoogle}
-              disabled={busy}
-              className="flex w-full items-center justify-center gap-3 rounded-xl py-3 text-sm font-semibold text-white transition-colors hover:bg-white/5 disabled:opacity-60"
-              style={{
-                backgroundColor: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.12)",
-              }}
-            >
-              <GoogleIcon />
-              Continue with Google
-            </button>
-          </form>
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        <div className="space-y-1.5">
+          <label htmlFor="email" className="text-xs font-medium text-muted-foreground">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@drawnto.fm"
+            className="w-full rounded-xl border bg-input/40 px-4 py-3 text-base text-foreground outline-none placeholder:text-muted-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
+          />
         </div>
+        <div className="space-y-1.5">
+          <label htmlFor="password" className="text-xs font-medium text-muted-foreground">
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            required
+            minLength={6}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete={mode === "signin" ? "current-password" : "new-password"}
+            placeholder="••••••••"
+            className="w-full rounded-xl border bg-input/40 px-4 py-3 text-base text-foreground outline-none placeholder:text-muted-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={busy}
+          className="mt-2 w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {busy ? "Hang tight…" : mode === "signin" ? "Come in" : "Join the wall"}
+        </button>
+
+        <div className="flex items-center gap-3 py-1">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs uppercase tracking-widest text-foreground/40">or</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGoogle}
+          disabled={busy}
+          className="flex w-full items-center justify-center gap-3 rounded-xl border bg-input/25 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-white/5 disabled:opacity-60"
+        >
+          <GoogleIcon />
+          Continue with Google
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// --- Philosophy line ---
+
+function PhilosophyLine() {
+  return (
+    <div className="absolute bottom-8 left-0 right-0 z-10 text-center font-light italic text-[clamp(0.875rem,1.2vw,1.1rem)] text-muted-foreground">
+      Music hits different when you share it with the right people.
+    </div>
+  );
+}
+
+// --- Main Auth Page ---
+
+function AuthPage() {
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        navigate({ to: "/home" });
+      } else {
+        setChecking(false);
+      }
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+        navigate({ to: "/home" });
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [navigate]);
+
+  if (checking) return null;
+
+  return (
+    <main className="relative flex min-h-screen w-full flex-col md:flex-row" style={{ backgroundColor: "oklch(0.05 0.005 280)" }}>
+      {/* Left: Listener Wall */}
+      <div className="relative h-[45vh] md:h-screen md:w-[55%] overflow-hidden">
+        <ListenerWall />
+        {/* Mobile gradient fade */}
+        <div
+          className="absolute inset-x-0 bottom-0 h-16 md:hidden"
+          style={{
+            background: "linear-gradient(to bottom, transparent, oklch(0.04 0.002 280))",
+          }}
+        />
+      </div>
+
+      {/* Right: Auth panel */}
+      <div className="relative flex min-h-[55vh] md:min-h-screen md:w-[45%] flex-col bg-background">
+        <AuthForm />
+        <PhilosophyLine />
       </div>
     </main>
   );
 }
-
-
 
 function GoogleIcon() {
   return (

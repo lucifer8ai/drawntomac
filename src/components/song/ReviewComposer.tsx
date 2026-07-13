@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Eye, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import type { Tables } from "@/lib/types";
 
 const REVIEW_EDIT_WINDOW_MS = 48 * 60 * 60 * 1000;
@@ -82,27 +83,23 @@ export function ReviewComposer({
   // STATE: no review posted yet — show composer
   if (mode === "write") {
     return (
-      <div
-        className="mt-8 rounded-2xl p-5"
-        style={{ backgroundColor: "#000000", border: "1px solid rgba(245,240,232,0.08)" }}
-      >
+      <div className="mt-8 rounded-2xl border bg-raised p-5">
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
           placeholder="Write a review…"
           rows={3}
-          className="w-full resize-none rounded-xl bg-transparent p-3 text-sm text-white outline-none"
-          style={{ border: "1px solid rgba(245,240,232,0.08)" }}
+          className="w-full resize-none rounded-xl border bg-transparent p-3 text-base text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring"
         />
-        <div className="mt-3 flex justify-end">
-          <button
-            disabled={submitting}
-            onClick={submit}
-            className="rounded-full px-5 py-2 text-sm font-semibold text-white disabled:opacity-50"
-            style={{ backgroundColor: "#D4556A" }}
-          >
-            {submitting ? "Posting…" : "Post review"}
-          </button>
+        <div className="mt-3 flex justify-end gap-2">
+          {entry && (
+            <Button type="button" variant="raised" shape="pill" onClick={() => { setBody(entry.body ?? ""); setMode("viewing"); }}>
+              Cancel
+            </Button>
+          )}
+          <Button type="button" disabled={submitting} shape="pill" onClick={submit}>
+            {submitting ? "Posting…" : entry ? "Save" : "Post review"}
+          </Button>
         </div>
       </div>
     );
@@ -112,14 +109,10 @@ export function ReviewComposer({
   if (mode === "collapsed") {
     return (
       <div className="mt-8">
-        <button
-          onClick={() => setMode(canEdit ? "viewing" : "locked")}
-          className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white transition-colors"
-          style={{ border: "1px solid rgba(245,240,232,0.08)" }}
-        >
+        <Button type="button" variant="raised" shape="pill" onClick={() => setMode(canEdit ? "viewing" : "locked")}>
           <Eye size={14} />
           See your review
-        </button>
+        </Button>
       </div>
     );
   }
@@ -127,20 +120,17 @@ export function ReviewComposer({
   // STATE: locked (>48h)
   if (mode === "locked") {
     return (
-      <div
-        className="mt-8 rounded-2xl p-5"
-        style={{ backgroundColor: "#000000", border: "1px solid rgba(245,240,232,0.08)" }}
-      >
-        <p className="text-xs font-medium" style={{ color: "#8A8276" }}>
+      <div className="mt-8 rounded-2xl border bg-raised p-5">
+        <p className="text-xs font-medium text-muted-foreground">
           Your review is locked — editing is only available for 48 hours after posting.
         </p>
         {entry?.body && (
           <>
-            <p className="mt-3 whitespace-pre-wrap text-sm text-white/90">{entry.body}</p>
+            <p className="mt-3 whitespace-pre-wrap text-sm text-foreground/90">{entry.body}</p>
             <button
+              type="button"
               onClick={() => setMode("collapsed")}
-              className="mt-3 text-xs font-semibold"
-              style={{ color: "#8A8276" }}
+              className="mt-3 text-xs font-semibold text-muted-foreground"
             >
               Collapse
             </button>
@@ -152,26 +142,19 @@ export function ReviewComposer({
 
   // STATE: viewing — show review + edit button (within 48h)
   return (
-    <div
-      className="mt-8 rounded-2xl p-5"
-      style={{ backgroundColor: "#000000", border: "1px solid rgba(245,240,232,0.08)" }}
-    >
+    <div className="mt-8 rounded-2xl border bg-raised p-5">
       {entry?.body && (
-        <p className="whitespace-pre-wrap text-sm text-white/90">{entry.body}</p>
+        <p className="whitespace-pre-wrap text-base text-foreground/90">{entry.body}</p>
       )}
       <div className="mt-3 flex items-center gap-3">
-        <button
-          onClick={() => setMode("write")}
-          className="flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white transition-colors"
-          style={{ backgroundColor: "#D4556A" }}
-        >
+        <Button type="button" shape="pill" size="sm" onClick={() => setMode("write")}>
           <Pencil size={14} />
           Edit
-        </button>
+        </Button>
         <button
+          type="button"
           onClick={() => setMode("collapsed")}
-          className="text-xs font-semibold"
-          style={{ color: "#8A8276" }}
+          className="text-xs font-semibold text-muted-foreground"
         >
           Collapse
         </button>
@@ -182,15 +165,8 @@ export function ReviewComposer({
 
 export function ReviewPrompt() {
   return (
-    <div
-      className="mt-8 rounded-2xl p-5 text-sm"
-      style={{
-        backgroundColor: "#000000",
-        border: "1px solid rgba(245,240,232,0.08)",
-        color: "#8A8276",
-      }}
-    >
-      <Link to="/" style={{ color: "#D4556A" }} className="font-semibold">
+    <div className="mt-8 rounded-2xl border bg-raised p-5 text-sm text-muted-foreground">
+      <Link to="/" className="font-semibold text-primary">
         Sign in
       </Link>{" "}
       to review or log a listen.

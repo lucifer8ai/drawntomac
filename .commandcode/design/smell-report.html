@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Smell Report — drawnTo</title>
+<style>
+  :root { --bg:#0a0a0c; --surface:#141418; --border:#2a2a30; --text:#e8e6e1; --muted:#8a8276; --green:#4ade80; --red:#f87171; --amber:#d4a02c; --blue:#60a5fa; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,sans-serif; line-height:1.6; padding:2rem; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.5rem; margin-bottom:1.5rem; }
+  h1 { font-size:1.5rem; margin-bottom:.25rem; }
+  h2 { font-size:1.1rem; color:var(--muted); margin-bottom:1rem; font-weight:400; }
+  .score-big { font-size:3rem; font-weight:700; color:var(--green); margin:1rem 0; }
+  table { width:100%; border-collapse:collapse; margin:1rem 0; }
+  th, td { padding:.5rem .5rem; text-align:left; border-bottom:1px solid var(--border); font-size:.9rem; }
+  th { color:var(--muted); font-weight:500; font-size:.8rem; }
+  .pass { color:var(--green); }
+  .fail { color:var(--red); }
+  .finding { border-left:3px solid var(--red); padding:.75rem 1rem; margin:.75rem 0; background:rgba(255,255,255,.02); }
+  .clean { border-left:3px solid var(--border); padding:1rem; margin:1rem 0; background:rgba(74,222,128,.04); }
+  code { background:rgba(255,255,255,.06); padding:.15em .4em; border-radius:4px; font-size:.9em; }
+  .badge { display:inline-block; padding:.2em .6em; border-radius:6px; font-size:.8em; font-weight:600; }
+  .badge-clean { background:rgba(74,222,128,.15); color:var(--green); }
+  .badge-faint { background:rgba(74,222,128,.1); color:var(--green); }
+  .badge-high { background:rgba(248,113,113,.15); color:var(--red); }
+  .prescription { background:rgba(96,165,250,.08); border:1px solid rgba(96,165,250,.2); border-radius:8px; padding:1rem; margin:.75rem 0; }
+</style>
+</head>
+<body>
+<h1>👃 Design Smell Report</h1>
+<h2>drawnTo — 2026-07-09</h2>
+
+<div class="score-big">9/10 <span style="font-size:.6em;vertical-align:middle;">FAINT</span></div>
+<p style="color:var(--muted);margin-bottom:1.5rem;">Tells found: 1</p>
+
+<div class="card">
+<table>
+<tr><th>#</th><th>Odor</th><th>Detected?</th></tr>
+<tr><td>1</td><td>Tech gradient (blue-violet/indigo-cyan)</td><td><span class="pass">No</span></td></tr>
+<tr><td>2</td><td>Generic tech hue (blue-purple identity)</td><td><span class="pass">No</span></td></tr>
+<tr><td>3</td><td>Feature tile grid (3-column icon grid)</td><td><span class="pass">No</span></td></tr>
+<tr><td>4</td><td>Accent rail (colored left-border)</td><td><span class="pass">No</span></td></tr>
+<tr><td>5</td><td>Unearned blur (frosted glass)</td><td><span class="pass">No</span></td></tr>
+<tr><td>6</td><td>Icon topper (icon-above-heading)</td><td><span class="pass">No</span></td></tr>
+<tr><td>7</td><td>Bounce everywhere (elastic easing)</td><td><span class="pass">No</span></td></tr>
+<tr><td>8</td><td>Default type (system font default)</td><td><span class="pass">No</span></td></tr>
+<tr><td>9</td><td>Center stack (everything centered)</td><td><span class="pass">No</span></td></tr>
+<tr><td>10</td><td>Domain default trap (generic rounded everything)</td><td><span class="fail">Yes</span></td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>Finding</h2>
+
+<div class="finding">
+<strong>Pill-Shape Saturation — HIGH</strong>
+<p style="color:var(--muted);margin-top:.25rem;">Odor: Domain default trap / Uniform bubbly border-radius</p>
+<p style="margin-top:.5rem;">38+ <code>rounded-full</code> instances across 15+ component files. Buttons, badges, avatars, inputs, filters, tabs, and toggles all use the same pill shape — no deliberate shape hierarchy.</p>
+<p style="margin-top:.5rem;color:var(--muted);font-size:.9rem;">Files: AppHeader, ReviewComposer, LikeDislike, Pagination, ReviewList, CoverArt, SongHeader, DiaryCard, TrendingList, DiscoverPage, CompatibleUsersList</p>
+<div class="prescription" style="margin-top:.75rem;">
+<strong>Fix:</strong> Action buttons → <code>rounded-lg</code> (8px). Inputs → <code>rounded-md</code> (6px). Badges/chips → <code>rounded-full</code> (earned). Cards → <code>rounded-2xl</code> (earned). Pills reserved for badges and chips.
+<br><strong>Mode:</strong> <code>/design deslop</code> or <code>/design refine</code>
+</div>
+</div>
+</div>
+
+<div class="clean">
+<h2 style="color:var(--green);margin-bottom:.5rem;">What Passed</h2>
+<p><strong>Typography:</strong> Outfit + Instrument Serif + Bebas Neue — intentional, not AI-default.</p>
+<p><strong>Color identity:</strong> Burnt rust primary — not blue-purple-tech gradient.</p>
+<p><strong>Copy:</strong> Brand-specific, zero buzzwords.</p>
+<p><strong>Composition:</strong> No feature grids, no cookie-cutter rhythm, no decorative blobs.</p>
+<p><strong>Emoji:</strong> Zero used as design elements.</p>
+<p><strong>System fonts:</strong> Fallbacks only — correctly positioned at end of stack.</p>
+</div>
+
+<div class="card" style="margin-top:2rem;">
+<p style="color:var(--muted);font-size:.9rem;">The design identity is real — burnt rust, vinyl/analog aesthetic, distinctive type. One structural tell to fix.</p>
+</div>
+</body>
+</html>

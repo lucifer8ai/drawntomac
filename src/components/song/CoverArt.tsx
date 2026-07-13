@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Play, Pause } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 function useAudio(url: string | null) {
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
@@ -24,11 +25,10 @@ export function CoverArt({
   return (
     <div className="mx-auto w-full max-w-[320px] md:mx-0">
       <div
-        className="aspect-square w-full overflow-hidden rounded-2xl"
-        style={{ backgroundColor: "#000000", border: "1px solid rgba(245,240,232,0.08)" }}
+        className="aspect-square w-full overflow-hidden rounded-2xl border bg-raised"
       >
         {url ? (
-          <img src={url} alt={title} className="h-full w-full object-cover" />
+          <img src={url} alt={title} className="h-full w-full object-cover" loading="lazy" decoding="async" />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-6xl text-white/20">♫</div>
         )}
@@ -56,7 +56,9 @@ function PreviewButton({ url }: { url: string | null }) {
   if (!url || !audio) return null;
 
   return (
-    <button
+    <Button
+      type="button"
+      shape="pill"
       onClick={() => {
         if (playing) {
           audio.pause();
@@ -66,11 +68,10 @@ function PreviewButton({ url }: { url: string | null }) {
           setPlaying(true);
         }
       }}
-      className="mt-3 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-semibold text-white"
-      style={{ backgroundColor: "#D4556A" }}
+      className="mt-4 w-full"
     >
       {playing ? <Pause size={14} /> : <Play size={14} />}
       {playing ? "Pause preview" : "Play 30s preview"}
-    </button>
+    </Button>
   );
 }

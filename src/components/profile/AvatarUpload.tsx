@@ -1,18 +1,25 @@
-import { useRef } from "react";
-import { Upload } from "lucide-react";
+import { useRef, useCallback } from "react";
+import { Upload, Trash2 } from "lucide-react";
 
 export function AvatarUpload({
   avatarUrl,
   onUpload,
   disabled,
   displayName,
+  onRemove,
 }: {
   avatarUrl: string | null;
   onUpload: (file: File) => void;
   disabled?: boolean;
   displayName?: string;
+  onRemove?: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleRemove = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onRemove?.();
+  }, [onRemove]);
 
   return (
     <button
@@ -35,6 +42,16 @@ export function AvatarUpload({
       <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         <Upload className="h-5 w-5 text-white" />
       </div>
+      {avatarUrl && onRemove && (
+        <button
+          type="button"
+          onClick={handleRemove}
+          disabled={disabled}
+          className="absolute top-1 right-1 bg-black/50 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+        >
+          <Trash2 size={14} className="text-white" />
+        </button>
+      )}
       <input
         ref={inputRef}
         type="file"

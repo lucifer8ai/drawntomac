@@ -1,7 +1,7 @@
+import { useState } from "react";
 import { toast } from "sonner";
 import { BookmarkPlus, BookmarkCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToggleDiaryEntry } from "@/hooks/useToggleDiaryEntry";
 import type { Tables } from "@/lib/types";
 
 type DiaryEntry = Tables<"diary_entries">;
@@ -9,57 +9,61 @@ type DiaryEntry = Tables<"diary_entries">;
 export function HeardButton({
   songId,
   userId,
-  entries,
+  entry,
   wantEntry,
   onUpdate,
 }: {
   songId: string;
   userId: string | null;
-  entries: DiaryEntry[];
+  entry: DiaryEntry | null;
   wantEntry: DiaryEntry | null;
   onUpdate: () => void;
 }) {
-  const today = new Date().toISOString().slice(0, 10);
-  const todayEntry = entries.find((e) => e.listened_on === today);
-  const olderCount = entries.filter((e) => e.listened_on !== today).length;
+  const [loading, setLoading] = useState(false);
+  const [optimisticEntry, setOptimisticEntry] = useState<DiaryEntry | null>(null);
+  const isActive = optimisticEntry ? !!optimisticEntry : !!entry;
 
   async function toggle() {
     if (!userId) return toast.error("Sign in to log listens.");
-    if (todayEntry) {
-      await supabase.from("diary_entries").delete().eq("id", todayEntry.id);
-    } else {
-      // Auto-delete Want when marking as heard (you can't both want + have heard)
-      if (wantEntry) {
-        await supabase.from("diary_entries").delete().eq("id", wantEntry.id);
-      }
-      const { error } = await supabase.from("diary_entries").insert({
-        user_id: userId,
-        song_id: songId,
-        type: "heard" as const,
-        listened_on: today,
-      });
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-    }
-    onUpdate();
-  }
+    setLoading(true);
 
-  const totalCount = olderCount + (todayEntry ? 1 : 0);
+    const wasActive = isActive;
+    setOptimisticEntry(wasActive ? null : { id: crypto.randomUUID() } as DiaryEntry);
+
+    try {
+      if (wasActive) {
+        const realEntry = entry ?? optimisticEntry;
+        if (realEntry) await supabase.from("diary_entries").delete().eq("id", realEntry.id);
+      } else {
+        if (wantEntry) await supabase.from("diary_entries").delete().eq("id", wantEntry.id);
+        const { error } = await supabase.from("diary_entries").insert({
+          user_id: userId,
+          song_id: songId,
+          type: "heard" as const,
+        });
+        if (error) throw error;
+      }
+      setOptimisticEntry(null);
+      onUpdate();
+    } catch (err: any) {
+      setOptimisticEntry(null);
+      toast.error(err?.message ?? "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <button
+      type="button"
       onClick={toggle}
-      className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors"
-      style={{
-        backgroundColor: todayEntry ? "#4A9E6E" : "#000000",
-        border: "1px solid rgba(245,240,232,0.08)",
-        color: todayEntry ? "#000000" : "white",
-      }}
+      disabled={loading}
+      className={`flex items-center gap-2 rounded-lg min-h-[44px] px-4 py-2 text-sm font-semibold transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed border ${
+        isActive ? "bg-heard text-heard-foreground border-heard" : "bg-raised text-foreground hover:bg-white/5"
+      }`}
     >
-      {todayEntry ? <BookmarkCheck size={14} /> : <BookmarkPlus size={14} />}
-      Heard{totalCount > 1 ? ` (${totalCount})` : ""}
+      {isActive ? <BookmarkCheck size={14} /> : <BookmarkPlus size={14} />}
+      Heard
     </button>
   );
 }
@@ -75,25 +79,56 @@ export function WantButton({
   entry: DiaryEntry | null;
   onUpdate: () => void;
 }) {
-  const { toggle, loading } = useToggleDiaryEntry(songId, userId, "want");
+  const [loading, setLoading] = useState(false);
+  const [optimisticEntry, setOptimisticEntry] = useState<DiaryEntry | null>(null);
+  const isActive = optimisticEntry ? !!optimisticEntry : !!entry;
 
   async function handleClick() {
-    await toggle();
-    onUpdate();
+    if (!userId) return toast.error("Sign in to interact.");
+    const wasActive = isActive;
+    setLoading(true);
+    setOptimisticEntry(wasActive ? null : { id: crypto.randomUUID() } as DiaryEntry);
+
+    try {
+      if (wasActive) {
+        const realEntry = entry ?? optimisticEntry;
+        if (realEntry) await supabase.from("diary_entries").delete().eq("id", realEntry.id);
+      } else {
+        const { data: heardEntry } = await supabase
+          .from("diary_entries")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("song_id", songId)
+          .eq("type", "heard")
+          .maybeSingle();
+        if (heardEntry) await supabase.from("diary_entries").delete().eq("id", heardEntry.id);
+        const { error } = await supabase.from("diary_entries").insert({
+          user_id: userId,
+          song_id: songId,
+          type: "want" as const,
+        });
+        if (error) throw error;
+      }
+      setOptimisticEntry(null);
+      onUpdate();
+    } catch (err: any) {
+      setOptimisticEntry(null);
+      toast.error(err?.message ?? "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <button
+      type="button"
       onClick={handleClick}
       disabled={loading}
-      className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
-      style={{
-        backgroundColor: entry ? "#9D8EC4" : "#000000",
-        border: "1px solid rgba(245,240,232,0.08)",
-        color: entry ? "#000000" : "white",
-      }}
+      className={`flex items-center gap-2 rounded-lg min-h-[44px] px-4 py-2 text-sm font-semibold transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed border ${
+        isActive ? "bg-want text-want-foreground border-want" : "bg-raised text-foreground hover:bg-white/5"
+      }`}
     >
-      {entry ? <BookmarkCheck size={14} /> : <BookmarkPlus size={14} />}
+      {isActive ? <BookmarkCheck size={14} /> : <BookmarkPlus size={14} />}
       Want to hear
     </button>
   );

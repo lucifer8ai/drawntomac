@@ -109,6 +109,13 @@ export function LocationPicker({
           </SelectTrigger>
           <SelectContent>
             {cities
+              .filter((c) => c.city === null)
+              .map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  Country only
+                </SelectItem>
+              ))}
+            {cities
               .filter((c) => c.city !== null)
               .map((c) => (
                 <SelectItem key={c.id} value={c.id}>

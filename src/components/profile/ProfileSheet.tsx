@@ -1,18 +1,23 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ProfileEditForm } from "./ProfileEditForm";
 import { FollowListSheet } from "./FollowListSheet";
+import { AccountSettings } from "./AccountSettings";
+import { ProfileStatsRow } from "./ProfileStatsRow";
 import { useProfile } from "@/hooks/useProfile";
-import { LogOut, Pencil } from "lucide-react";
+import { useProfileStats } from "@/hooks/useProfileStats";
+import { LogOut, Pencil, ExternalLink } from "lucide-react";
 
 interface ProfileSheetProps {
   open: boolean;
   onClose: () => void;
+  onProfileUpdate?: (fields: { display_name?: string | null; avatar_url?: string | null }) => void;
 }
 
-export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
+export function ProfileSheet({ open, onClose, onProfileUpdate }: ProfileSheetProps) {
   const [userId, setUserId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [followSheet, setFollowSheet] = useState<"following" | "followers" | null>(null);
@@ -34,6 +39,8 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
     uploadAvatar,
     uploadBanner,
   } = useProfile(userId);
+
+  const { stats: tasteStats, loading: statsLoading } = useProfileStats(userId);
 
   const displayName = profile?.display_name ?? profile?.username ?? "";
   const locationText = profile?.city && profile?.country
@@ -80,6 +87,12 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
                 onSave={async (fields) => {
                   await updateProfile(fields);
                   setEditing(false);
+                  if (onProfileUpdate) {
+                    onProfileUpdate({
+                      display_name: fields.display_name,
+                      avatar_url: fields.avatar_url,
+                    });
+                  }
                 }}
                 onUploadAvatar={uploadAvatar}
                 onUploadBanner={uploadBanner}
@@ -99,7 +112,7 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-black">
-                    <span className="text-4xl md:text-5xl font-['Instrument_Serif'] italic text-primary">
+                    <span className="text-4xl md:text-5xl font-semibold tracking-tight text-primary">
                       #d.You
                     </span>
                   </div>
@@ -148,6 +161,11 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
                 )}
               </div>
 
+              {/* Taste stats */}
+              <div className="px-4 pt-4">
+                <ProfileStatsRow stats={tasteStats} loading={statsLoading} />
+              </div>
+
               {/* Stats */}
               <div className="px-4 pt-3 flex gap-4">
                 <button
@@ -169,7 +187,7 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
               </div>
 
               {/* Actions */}
-              <div className="px-4 pt-4 space-y-2 mb-4">
+              <div className="px-4 pt-4 space-y-2">
                 <Button
                   onClick={() => setEditing(true)}
                   className="w-full h-11 rounded-lg active:scale-[0.97]"
@@ -179,11 +197,18 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
                 </Button>
               </div>
 
+              {/* Account Settings */}
+              {userId && (
+                <div className="border-t border-border/20 pt-4 mt-4 mx-4">
+                  <AccountSettings />
+                </div>
+              )}
+
               {/* Spacer */}
               <div className="flex-1" />
 
               {/* Sign out */}
-              <div className="px-4 pb-6">
+              <div className="px-4 pt-4 pb-6">
                 <Button
                   variant="ghost"
                   onClick={handleSignOut}

@@ -11,9 +11,13 @@ DROP TABLE IF EXISTS public.review_likes CASCADE;
 DROP TABLE IF EXISTS public.reviews CASCADE;
 DROP TABLE IF EXISTS public.spotify_token_cache CASCADE;
 
--- Drop old notification triggers that reference dropped tables
-DROP TRIGGER IF EXISTS trg_notify_like ON public.review_likes;
-DROP TRIGGER IF EXISTS trg_notify_comment ON public.review_comments;
+-- Drop old notification triggers that reference possibly-missing tables
+DO $$ BEGIN
+  DROP TRIGGER IF EXISTS trg_notify_like ON public.review_likes;
+EXCEPTION WHEN undefined_table THEN NULL; END $$;
+DO $$ BEGIN
+  DROP TRIGGER IF EXISTS trg_notify_comment ON public.review_comments;
+EXCEPTION WHEN undefined_table THEN NULL; END $$;
 DROP FUNCTION IF EXISTS public.notify_like();
 DROP FUNCTION IF EXISTS public.notify_comment();
 

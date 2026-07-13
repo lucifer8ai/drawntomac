@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Review — drawnTo</title>
+<style>
+  :root { --bg:#0a0a0c; --surface:#141418; --border:#2a2a30; --text:#e8e6e1; --muted:#8a8276; --green:#4ade80; --amber:#d4a02c; --red:#f87171; --blue:#60a5fa; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,sans-serif; line-height:1.6; padding:2rem; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.5rem; margin-bottom:1.5rem; }
+  h1 { font-size:1.5rem; margin-bottom:.25rem; }
+  h2 { font-size:1.1rem; color:var(--muted); margin-bottom:1rem; font-weight:400; }
+  .score-big { font-size:3rem; font-weight:700; color:var(--amber); margin:1rem 0; }
+  .lens-score { display:flex; align-items:center; gap:1rem; margin:.75rem 0; }
+  .lens-bar { flex:1; height:8px; background:var(--border); border-radius:4px; overflow:hidden; }
+  .lens-fill { height:100%; border-radius:4px; }
+  .finding { border-left:3px solid var(--border); padding:.75rem 1rem; margin:.75rem 0; background:rgba(255,255,255,.02); }
+  .finding.strong { border-left-color:var(--green); }
+  .finding.weak { border-left-color:var(--amber); }
+  .finding.fail { border-left-color:var(--red); }
+  .prescription { background:rgba(96,165,250,.08); border:1px solid rgba(96,165,250,.2); border-radius:8px; padding:1rem; margin:.5rem 0; display:flex; align-items:center; gap:.75rem; }
+  .prescription .num { color:var(--muted); font-weight:600; font-size:.9rem; min-width:1.5rem; }
+  .prescription .mode { background:rgba(96,165,250,.15); color:var(--blue); padding:.2em .6em; border-radius:4px; font-family:mono; font-size:.85em; }
+  code { background:rgba(255,255,255,.06); padding:.15em .4em; border-radius:4px; font-size:.9em; }
+  .verdict { font-size:1.1rem; line-height:1.7; padding:1rem; background:rgba(255,255,255,.03); border-radius:8px; margin-top:1.5rem; }
+</style>
+</head>
+<body>
+<h1>🎯 Design Review</h1>
+<h2>drawnTo — 2026-07-09</h2>
+
+<div class="score-big">33/50</div>
+
+<div class="card">
+<h2>Lens Scores</h2>
+
+<div class="lens-score">
+  <span style="min-width:12rem;">First impression</span>
+  <span style="min-width:2rem;font-weight:600;">7</span>
+  <div class="lens-bar"><div class="lens-fill" style="width:70%;background:var(--green);"></div></div>
+</div>
+<div class="lens-score">
+  <span style="min-width:12rem;">Hierarchy</span>
+  <span style="min-width:2rem;font-weight:600;">7</span>
+  <div class="lens-bar"><div class="lens-fill" style="width:70%;background:var(--green);"></div></div>
+</div>
+<div class="lens-score">
+  <span style="min-width:12rem;">Color voice</span>
+  <span style="min-width:2rem;font-weight:600;">6</span>
+  <div class="lens-bar"><div class="lens-fill" style="width:60%;background:var(--amber);"></div></div>
+</div>
+<div class="lens-score">
+  <span style="min-width:12rem;">Type voice</span>
+  <span style="min-width:2rem;font-weight:600;">6</span>
+  <div class="lens-bar"><div class="lens-fill" style="width:60%;background:var(--amber);"></div></div>
+</div>
+<div class="lens-score">
+  <span style="min-width:12rem;">Interaction feel</span>
+  <span style="min-width:2rem;font-weight:600;">7</span>
+  <div class="lens-bar"><div class="lens-fill" style="width:70%;background:var(--green);"></div></div>
+</div>
+</div>
+
+<div class="card">
+<h2>First Impression — 7/10</h2>
+
+<div class="finding strong">
+<strong>Strong: ListenerWall is a statement piece.</strong>
+<p>80+ song names in Bebas Neue, repeated 3×, with SVG noise texture, grid lines, rust accent bars, and a pulsing heartbeat dot. Communicates "this is about music" before reading a word. The auth panel is restrained and confident.</p>
+</div>
+
+<div class="finding weak">
+<strong>Weak: Interior loses the splash energy.</strong>
+<p>After login, the app becomes a standard dark-mode feed with burnt rust accents. The feed is text-dominant song lists. The Discover table is functional but cold. Nothing inside the app carries forward the analog/textural metaphor.</p>
+</div>
+</div>
+
+<div class="card">
+<h2>Hierarchy — 7/10</h2>
+
+<div class="finding strong">
+<strong>Strong: Song page has clear flow.</strong>
+<p>Cover art (320px, rounded-2xl) → song title (Instrument Serif, 3xl–5xl) → artist → metadata → actions → reviews. Progressive disclosure: Like/Dislike only appear after Heard. Want only shows without Heard. Smart gating.</p>
+</div>
+
+<div class="finding weak">
+<strong>Weak: Feed cards text-dominant.</strong>
+<p>Album art is 56×56px — secondary to text. Discover desktop table prioritizes data (rank/song/heard/like/review columns) over emotion. Genre filter chips at 28px height are hard to scan.</p>
+</div>
+</div>
+
+<div class="card">
+<h2>Color Voice — 6/10</h2>
+
+<div class="finding strong">
+<strong>Strong: Burnt rust is distinctive and analog.</strong>
+<p><code>oklch(0.66 0.18 35)</code> — warm terracotta that reads as physical. On the splash page it evokes worn record sleeves, aged brick, leather. Action colors (green/purple/yellow-ochre) are well-scoped to their specific buttons.</p>
+</div>
+
+<div class="finding fail">
+<strong>Fail: One color does too many jobs.</strong>
+<p>The burnt rust is simultaneously: primary button, active tab underline, active icon fill, notification badge, "like" sentiment, splash logo, pulse glow, stat numbers, play-preview, genre filter active, ranking badges, and avatar fallback. When one color means "click here" AND "you liked this" AND "someone mentioned you", it stops meaning anything specific. The color is a utility accent, not a voice.</p>
+</div>
+</div>
+
+<div class="card">
+<h2>Type Voice — 6/10</h2>
+
+<div class="finding strong">
+<strong>Strong: Splash page typography is the product's best moment.</strong>
+<p>Bebas Neue on the dense song wall (raw, urgent) contrasted against Instrument Serif italic ("i don't just listen, i feel it"). This is a real brand-level type decision with tension, texture, and register shift.</p>
+</div>
+
+<div class="finding fail">
+<strong>Fail: Instrument Serif is nearly absent from the app.</strong>
+<p>It appears in three places: splash tagline, splash philosophy line, and song title on the detail page. After login, users never see serif type unless they navigate to a specific song. The serif/sans contrast that defines the splash vanishes. Outfit at text-sm reads as a generic geometric sans in dark mode.</p>
+</div>
+</div>
+
+<div class="card">
+<h2>Interaction Feel — 7/10</h2>
+
+<div class="finding strong">
+<strong>Strong: Consistent tactile feedback.</strong>
+<p>Every action button uses <code>active:scale-[0.97]</code> — physical press-down. Animation curves are tasteful (scale-in at 200ms, fade-in-up at 300ms with cubic-bezier). Skeleton shimmer is well-crafted. Search popover has smooth entrance and keyboard support.</p>
+</div>
+
+<div class="finding weak">
+<strong>Weak: The "did it register?" gap.</strong>
+<p>Heard, Want, Like, and Dislike lack optimistic updates. The user taps, waits for DB round-trip (200-500ms), then sees the visual change. Button shows <code>opacity-50</code> during load — communicates "waiting", not "worked." Only ReviewCard like toggle is optimistic. No success micro-animation after marking a song as Heard.</p>
+</div>
+</div>
+
+<div class="card">
+<h2>Prioritized Recommendations</h2>
+
+<div class="prescription">
+  <span class="num">1</span>
+  <span>Primary color does too many jobs — separate semantic roles</span>
+  <span class="mode">/design recolor</span>
+</div>
+<div class="prescription">
+  <span class="num">2</span>
+  <span>Instrument Serif absent from app interior — extend serif voice</span>
+  <span class="mode">/design typeset</span>
+</div>
+<div class="prescription">
+  <span class="num">3</span>
+  <span>No optimistic updates on toggle actions — the wait gap</span>
+  <span class="mode">/design interaction</span>
+</div>
+<div class="prescription">
+  <span class="num">4</span>
+  <span>Pill-shape saturation — no shape hierarchy</span>
+  <span class="mode">/design deslop</span>
+</div>
+<div class="prescription">
+  <span class="num">5</span>
+  <span>App interior lacks splash page's analog personality</span>
+  <span class="mode">/design voice</span>
+</div>
+<div class="prescription">
+  <span class="num">6</span>
+  <span>Feed cards text-dominant, album art too small</span>
+  <span class="mode">/design relayout</span>
+</div>
+</div>
+
+<div class="verdict">
+The splash page is memorable — Bebas Neue wall, Instrument Serif italic, burnt rust as texture. The app interior is competent but hollow: the design choices that make the splash distinctive don't carry through. The single highest-impact change is separating the burnt rust's jobs so it becomes a voice again. After that: extend the serif, make toggles feel instant, and vary the shape language.
+</div>
+</body>
+</html>

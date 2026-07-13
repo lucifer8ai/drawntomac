@@ -22,12 +22,14 @@ export function AppHeader({
   avatarUrl,
   displayName,
   onProfileClick,
+  triggerSearch,
 }: {
   activeTab: Tab;
   onTabChange: (t: Tab) => void;
   avatarUrl?: string | null;
   displayName?: string | null;
   onProfileClick: () => void;
+  triggerSearch?: number;
 }) {
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<SearchHit[]>([]);
@@ -46,6 +48,12 @@ export function AppHeader({
   function collapseSearch() {
     if (!q.trim()) setSearchExpanded(false);
   }
+
+  useEffect(() => {
+    if (triggerSearch && triggerSearch > 0) {
+      expandSearch();
+    }
+  }, [triggerSearch]);
 
   useEffect(() => {
     const query = q.trim();
