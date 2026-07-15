@@ -1,10 +1,14 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef, memo } from "react";
 import type { CompatibleUser } from "@/hooks/useCompatibleUsers";
 import { computeCompatibilityScore, getCompatibilityTier } from "@/utils/compatibility";
 import { formatDistanceToNow } from "date-fns";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
 interface CompatibleUsersListProps {
   users: CompatibleUser[];
@@ -24,8 +28,8 @@ interface CompatibleUsersListProps {
 
 function UserSkeleton() {
   return (
-    <div className="flex items-center gap-3 rounded-xl border bg-raised p-3">
-      <div className="h-12 w-12 rounded-full flex-shrink-0 animate-skeleton" />
+    <div className="flex items-center gap-3 rounded-2xl border bg-raised p-3">
+      <div className="h-10 w-10 rounded-full flex-shrink-0 animate-skeleton" />
       <div className="flex-1 min-w-0 space-y-2">
         <div className="h-3 w-1/3 rounded animate-skeleton" />
         <div className="h-3 w-1/2 rounded animate-skeleton" />
@@ -34,22 +38,40 @@ function UserSkeleton() {
   );
 }
 
-function UserCard({
-  user,
-  maxScore,
-  currentUserId,
-  followState,
-  onToggleFollow,
-}: {
+function getTierColor(tier: ReturnType<typeof getCompatibilityTier>): string {
+  if (!tier) return "var(--color-tier-good)";
+  switch (tier.label) {
+    case "Taste Twin": return "var(--color-tier-twin)";
+    case "High Match": return "var(--color-tier-high)";
+    default: return "var(--color-tier-good)";
+  }
+}
+
+interface UserCardProps {
   user: CompatibleUser;
   maxScore: number;
   currentUserId: string | null;
-  followState: Record<string, boolean>;
+  isFollowing: boolean;
+  isFollowLoading: boolean;
   onToggleFollow: (userId: string) => void;
-}) {
+  isHero?: boolean;
+  className?: string;
+}
+
+const UserCard = memo(function UserCard({
+  user,
+  maxScore,
+  currentUserId,
+  isFollowing,
+  isFollowLoading,
+  onToggleFollow,
+  isHero = false,
+  className,
+}: UserCardProps) {
   const score = computeCompatibilityScore(user);
   const tier = getCompatibilityTier(score, maxScore);
   const pct = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+  const tierColor = getTierColor(tier);
 
   const whyPreview = buildWhyPreview(user);
 
@@ -59,106 +81,118 @@ function UserCard({
   const reviewedPct = total > 0 ? (user.sharedReviewed / total) * 100 : 0;
   const wantPct = total > 0 ? (user.sharedWant / total) * 100 : 0;
 
-  const activityLabel = user.lastActiveAt
-    ? formatDistanceToNow(new Date(user.lastActiveAt), { addSuffix: true })
-    : null;
-
   const isOwnCard = currentUserId === user.userId;
-  const isFollowing = followState[user.userId] ?? false;
+  const displayName = user.displayName ?? user.username;
+  const avatarSize = isHero ? "h-14 w-14" : "h-10 w-10";
 
   return (
     <Link
       to="/user/$username"
       params={{ username: user.username }}
-      className="block rounded-xl border bg-raised p-3 transition-colors hover:border-foreground/12"
+      className={cn(
+        "block rounded-2xl border bg-raised transition-colors hover:border-foreground/12",
+        isHero ? "p-4" : "p-3",
+        className,
+      )}
     >
       <div className="flex items-start gap-3">
-        {user.avatarUrl ? (
-          <img
-            src={user.avatarUrl}
-            alt={`${user.displayName ?? user.username} avatar`}
-            className="h-10 w-10 rounded-full object-cover flex-shrink-0"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-            {(user.displayName ?? user.username)[0]?.toUpperCase()}
-          </div>
-        )}
+        <Avatar className={cn(avatarSize, "flex-shrink-0")}>
+          {user.avatarUrl ? (
+            <AvatarImage src={user.avatarUrl} alt={`${displayName} avatar`} />
+          ) : null}
+          <AvatarFallback className="text-sm font-bold">
+            {displayName[0]?.toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="truncate text-sm font-semibold text-foreground">
-              {user.displayName ?? user.username}
+            <span className={cn("truncate font-semibold text-foreground", isHero ? "text-base" : "text-sm")}>
+              {displayName}
             </span>
             {tier && (
               <span
-                className="flex-shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
-                style={{ backgroundColor: `${tier.color}20`, color: tier.color }}
+                className="flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
+                style={{ backgroundColor: `${tierColor}20`, color: tierColor }}
               >
                 {tier.label} ({pct}%)
               </span>
             )}
           </div>
+
           {whyPreview && (
             <div className="mt-0.5 truncate text-xs text-muted-foreground">{whyPreview}</div>
           )}
+
           {total > 0 && (
             <div className="mt-2">
-              <div className="flex h-1.5 rounded-full overflow-hidden">
-                <div
-                  className="bg-muted-foreground/30"
-                  style={{ width: `${heardPct}%` }}
-                />
-                <div
-                  className="bg-primary"
-                  style={{ width: `${likedPct}%` }}
-                />
-                <div
-                  className="bg-[#a855f7]"
-                  style={{ width: `${reviewedPct}%` }}
-                />
-                <div
-                  className="bg-muted-foreground/50"
-                  style={{ width: `${wantPct}%` }}
-                />
+              <div className="flex items-center gap-2 mb-1">
+                <div className="flex h-1.5 flex-1 rounded-full overflow-hidden">
+                  <div className="bg-[var(--color-heard)]/30" style={{ width: `${heardPct}%` }} />
+                  <div className="bg-[var(--color-like)]" style={{ width: `${likedPct}%` }} />
+                  <div className="bg-[var(--color-want)]" style={{ width: `${reviewedPct}%` }} />
+                  <div className="bg-muted-foreground/50" style={{ width: `${wantPct}%` }} />
+                </div>
+                <span className="flex-shrink-0 text-xs font-medium text-muted-foreground tabular-nums">
+                  {pct}% match
+                </span>
               </div>
-              <div className="mt-0.5 text-[10px] text-muted-foreground">
+              <div className="text-xs text-muted-foreground">
                 Heard {user.sharedHeard} · Liked {user.sharedLiked} · Reviewed {user.sharedReviewed}
               </div>
             </div>
           )}
-          {activityLabel && (
-            <div className="mt-1 text-[11px] text-muted-foreground">{activityLabel}</div>
-          )}
-          {user.topSharedArtist && (
-            <div className="mt-0.5 text-[11px] text-muted-foreground">
-              Into: <span className="text-foreground">{user.topSharedArtist}</span>
-            </div>
-          )}
         </div>
+
         {currentUserId && !isOwnCard && (
-          <button
-            type="button"
-            aria-label={isFollowing ? `Unfollow @${user.username}` : `Follow @${user.username}`}
-            onClick={async (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onToggleFollow(user.userId);
-            }}
-            className={`rounded-lg px-3 py-2 text-[11px] font-medium min-h-[44px] min-w-[44px]
-              border transition-all duration-200 active:scale-[0.97] focus-visible:ring-1 focus-visible:ring-ring flex-shrink-0
-              ${isFollowing
-                ? "border-border/30 bg-raised text-muted-foreground hover:bg-white/[0.05]"
-                : "border-primary/30 bg-primary text-primary-foreground hover:bg-primary/90"
-              }`}
-          >
-            {isFollowing ? "Following" : "Follow"}
-          </button>
+          isFollowing ? (
+            <Button
+              type="button"
+              variant="raised"
+              size="sm"
+              shape="pill"
+              disabled={isFollowLoading}
+              aria-label={`Unfollow @${user.username}`}
+              className="text-muted-foreground flex-shrink-0 min-h-[44px] min-w-[44px]"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggleFollow(user.userId);
+              }}
+            >
+              {isFollowLoading ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                "Following"
+              )}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
+              shape="pill"
+              disabled={isFollowLoading}
+              aria-label={`Follow @${user.username}`}
+              className="flex-shrink-0 min-h-[44px] min-w-[44px]"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggleFollow(user.userId);
+              }}
+            >
+              {isFollowLoading ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                "Follow"
+              )}
+            </Button>
+          )
         )}
       </div>
     </Link>
   );
-}
+});
 
 function buildWhyPreview(user: CompatibleUser): string | null {
   if (user.likedSongs.length > 0) {
@@ -192,6 +226,41 @@ export function CompatibleUsersList({
   currentUserId,
 }: CompatibleUsersListProps) {
   const [followState, setFollowState] = useState<Record<string, boolean>>({});
+  const [followLoading, setFollowLoading] = useState<Record<string, boolean>>({});
+
+  // Stable callback ref — prevents re-rendering memoized UserCards
+  const onToggleFollowRef = useRef<(userId: string) => void>(() => {});
+  const followStateRef = useRef(followState);
+  followStateRef.current = followState;
+
+  onToggleFollowRef.current = useCallback(async (targetId: string) => {
+    if (!currentUserId) return;
+    const currentlyFollowing = followStateRef.current[targetId] ?? false;
+
+    setFollowLoading((prev) => ({ ...prev, [targetId]: true }));
+    setFollowState((prev) => ({ ...prev, [targetId]: !currentlyFollowing }));
+
+    try {
+      if (currentlyFollowing) {
+        const { error: delErr } = await supabase
+          .from("follows")
+          .delete()
+          .eq("follower_id", currentUserId)
+          .eq("following_id", targetId);
+        if (delErr) throw delErr;
+      } else {
+        const { error: insErr } = await supabase
+          .from("follows")
+          .insert({ follower_id: currentUserId, following_id: targetId });
+        if (insErr) throw insErr;
+      }
+    } catch {
+      setFollowState((prev) => ({ ...prev, [targetId]: currentlyFollowing }));
+      toast.error("Couldn't update follow status. Try again.");
+    } finally {
+      setFollowLoading((prev) => ({ ...prev, [targetId]: false }));
+    }
+  }, [currentUserId]);
 
   // Batch-check follow status when users list changes
   useEffect(() => {
@@ -214,30 +283,6 @@ export function CompatibleUsersList({
         });
       });
   }, [currentUserId, users]);
-
-  const handleToggleFollow = useCallback(async (targetId: string) => {
-    if (!currentUserId) return;
-    const currentlyFollowing = followState[targetId] ?? false;
-    setFollowState((prev) => ({ ...prev, [targetId]: !currentlyFollowing }));
-    try {
-      if (currentlyFollowing) {
-        const { error: delErr } = await supabase
-          .from("follows")
-          .delete()
-          .eq("follower_id", currentUserId)
-          .eq("following_id", targetId);
-        if (delErr) throw delErr;
-      } else {
-        const { error: insErr } = await supabase
-          .from("follows")
-          .insert({ follower_id: currentUserId, following_id: targetId });
-        if (insErr) throw insErr;
-      }
-    } catch {
-      setFollowState((prev) => ({ ...prev, [targetId]: currentlyFollowing }));
-      toast.error("Couldn't update follow status. Try again.");
-    }
-  }, [currentUserId, followState]);
 
   if (isAnonymous) return null;
 
@@ -268,27 +313,36 @@ export function CompatibleUsersList({
 
   if (isEmpty) {
     return (
-      <div className="text-center py-8">
+      <div className="text-center py-10">
         {diaryCount === 0 ? (
           <>
             <p className="text-sm text-muted-foreground mb-2">
-              Log your first song to find people who share your taste.
+              Log your first song and we'll find people who share your taste.
             </p>
             <button
               type="button"
               onClick={onSearch}
-              className="text-xs font-medium text-primary underline"
+              className="text-sm font-medium text-primary underline"
             >
               Search for a song →
             </button>
           </>
         ) : diaryCount < 5 ? (
-          <p className="text-sm text-muted-foreground">
-            Heard {diaryCount} songs. Hear {5 - diaryCount} more to unlock compatible listeners.
-          </p>
+          <>
+            <p className="text-sm text-muted-foreground mb-2">
+              Almost there — {5 - diaryCount} more {5 - diaryCount === 1 ? "song" : "songs"} and we'll introduce you to people who share your taste.
+            </p>
+            <button
+              type="button"
+              onClick={onSearch}
+              className="text-sm font-medium text-primary underline"
+            >
+              Search for a song →
+            </button>
+          </>
         ) : (
           <p className="text-sm text-muted-foreground">
-            No compatible listeners found yet. More people join every day.
+            More people join every day — we're always looking for your taste twins.
           </p>
         )}
       </div>
@@ -297,15 +351,18 @@ export function CompatibleUsersList({
 
   return (
     <div>
-      <div className="space-y-2">
-        {users.map((user) => (
+      <div className="md:grid gap-2 space-y-2 md:space-y-0 md:[grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
+        {users.map((user, i) => (
           <UserCard
             key={user.userId}
             user={user}
             maxScore={maxScore}
             currentUserId={currentUserId}
-            followState={followState}
-            onToggleFollow={handleToggleFollow}
+            isFollowing={followState[user.userId] ?? false}
+            isFollowLoading={followLoading[user.userId] ?? false}
+            onToggleFollow={onToggleFollowRef.current}
+            isHero={i === 0}
+            className={i === 0 ? "md:col-span-full" : undefined}
           />
         ))}
       </div>

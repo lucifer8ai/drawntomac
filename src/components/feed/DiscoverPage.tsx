@@ -15,7 +15,7 @@ import { TopMoversStrip } from "@/components/feed/TopMoversStrip";
 import { computeCompatibilityScore } from "@/utils/compatibility";
 
 export function DiscoverPage() {
-  const { triggerSearch } = useTabContext();
+  const { triggerSearch, discoverSection, setDiscoverSection } = useTabContext();
   const [userId, setUserId] = useState<string | null>(null);
   const [compatSort, setCompatSort] = useState<SortMode>("composite");
   const [compatPage, setCompatPage] = useState(0);
@@ -50,11 +50,46 @@ export function DiscoverPage() {
 
   return (
     <div className="mx-auto max-w-full px-2 md:max-w-4xl md:px-4 py-4 pb-20">
-      {/* ── YOUR PEOPLE ── */}
+      {/* ── SUBSECTION TOGGLE ── */}
       {!isAnonymous && (
-        <section className="mb-8">
+        <div className="flex gap-1 mb-6" role="tablist" aria-label="Discover sections">
+          {(
+            [
+              { section: "trending" as const, label: "What's Hot" },
+              { section: "people" as const, label: "People" },
+            ]
+          ).map(({ section, label }) => {
+            const isActive = discoverSection === section;
+            return (
+              <button
+                key={section}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setDiscoverSection(section)}
+                className={`relative rounded-lg px-3 py-1.5 text-base font-medium min-h-[44px] min-w-[44px]
+                  transition-colors duration-150
+                  active:scale-[0.97] focus-visible:ring-1 focus-visible:ring-ring
+                  ${isActive
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                  }`}
+              >
+                {label}
+                {isActive && (
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-5 rounded-full bg-primary" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── PEOPLE ── */}
+      {!isAnonymous && (
+        <section className={`mb-8 transition-opacity duration-150 ${discoverSection === "people" ? "" : "hidden"}`}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold">Your People</h2>
+            <h2 className="text-sm font-semibold">People</h2>
             <div className="flex gap-1">
               {(
                 [
@@ -97,6 +132,11 @@ export function DiscoverPage() {
             currentUserId={userId}
           />
           {allUsers.length > 0 && (
+            <div className="mt-2 text-xs text-muted-foreground">
+              You share tastes with {allUsers.length} {allUsers.length === 1 ? "listener" : "listeners"}.
+            </div>
+          )}
+          {allUsers.length > 0 && (
             <div className="mt-6">
               <ConnectingSongsSection
                 songs={connectingSongs.songs}
@@ -124,7 +164,7 @@ export function DiscoverPage() {
       )}
 
       {/* ── WHAT'S HOT ── */}
-      <section>
+      <section className={`transition-opacity duration-150 ${discoverSection === "trending" ? "" : "hidden"}`}>
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-sm font-semibold">What's Hot</h2>
           <div className="flex gap-1">

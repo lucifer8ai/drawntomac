@@ -60,6 +60,11 @@
   --color-artist: oklch(0.78 0.01 90);
   --color-raised: oklch(0.08 0.003 280);
 
+  /* Tier badges — stepped grey palette for compatibility levels */
+  --color-tier-twin: oklch(0.85 0 0);
+  --color-tier-high: oklch(0.58 0.02 85);
+  --color-tier-good: oklch(0.40 0.02 85);
+
   --font-sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-serif: "DM Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: "DM Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -123,6 +128,11 @@
   --color-save-foreground: oklch(0 0 0);
   --color-artist: oklch(0.78 0.01 90);
   --color-raised: oklch(0.08 0.003 280);
+
+  /* Tier badges */
+  --color-tier-twin: oklch(0.85 0 0);
+  --color-tier-high: oklch(0.58 0.02 85);
+  --color-tier-good: oklch(0.40 0.02 85);
 }
 
 @layer utilities {
