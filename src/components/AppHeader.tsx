@@ -116,7 +116,11 @@ export function AppHeader({
     };
   }, [open]);
 
+  const navigating = useRef(false);
+
   async function pickSong(hit: SearchHit) {
+    if (navigating.current) return;
+    navigating.current = true;
     setOpen(false);
     setQ("");
     try {
@@ -130,16 +134,22 @@ export function AppHeader({
         try {
           const { error } = (await res.json()) as { error?: string };
           if (error) message = error;
-        } catch {}
+        } catch {
+          /* body parsing may fail — fall through to generic message */
+        }
         toast.error(message);
         return;
       }
       const { slug } = (await res.json()) as { slug: string };
-      navigate({ to: "/song/$slug" as never, params: { slug } as never }).catch(() => {
-        window.location.href = `/song/${slug}`;
-      });
+      navigate({ to: "/song/$slug" as never, params: { slug } as never }).catch(
+        () => {
+          window.location.href = `/song/${slug}`;
+        },
+      );
     } catch {
       toast.error("Something went wrong. Try again.");
+    } finally {
+      navigating.current = false;
     }
   }
 
@@ -188,9 +198,15 @@ export function AppHeader({
           </div>
           {open && (
             <div className="absolute left-0 right-0 top-full z-[9999] mt-2 max-h-[320px] overflow-y-auto rounded-2xl border bg-popover/98 p-2 shadow-2xl animate-scale-in">
-              {loading && <div className="p-3 text-xs text-muted-foreground">Searching…</div>}
+              {loading && (
+                <div className="p-3 text-xs text-muted-foreground">
+                  Searching…
+                </div>
+              )}
               {!loading && hits.length === 0 && (
-                <div className="p-3 text-xs text-muted-foreground">No matches.</div>
+                <div className="p-3 text-xs text-muted-foreground">
+                  No matches.
+                </div>
               )}
               {hits.map((h) => (
                 <button
@@ -213,7 +229,9 @@ export function AppHeader({
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold text-foreground">{h.title}</div>
+                    <div className="truncate text-sm font-semibold text-foreground">
+                      {h.title}
+                    </div>
                     <div className="truncate text-xs text-muted-foreground">
                       {h.artistName}
                     </div>
@@ -231,7 +249,12 @@ export function AppHeader({
           title={displayName ?? "Profile"}
         >
           {avatarUrl ? (
-            <img src={avatarUrl} alt={displayName ?? "Profile"} className="h-full w-full object-cover" loading="lazy" />
+            <img
+              src={avatarUrl}
+              alt={displayName ?? "Profile"}
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
           ) : (
             (displayName ?? "U").slice(0, 1).toUpperCase()
           )}

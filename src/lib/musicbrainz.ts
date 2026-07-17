@@ -63,12 +63,24 @@ export interface ParsedMusicBrainzResult {
   tags: string[];
 }
 
-function parseArtist(recording: MusicBrainzRecording): { name: string; primaryName: string; mbid: string | null } {
+function parseArtist(recording: MusicBrainzRecording): {
+  name: string;
+  primaryName: string;
+  mbid: string | null;
+} {
   const credits = recording["artist-credit"];
-  if (!credits || credits.length === 0) return { name: "Unknown", primaryName: "Unknown", mbid: null };
-  const name = credits.map((c) => c.artist.name + (c.joinphrase ?? "")).join("").trim();
+  if (!credits || credits.length === 0)
+    return { name: "Unknown", primaryName: "Unknown", mbid: null };
+  const name = credits
+    .map((c) => c.artist.name + (c.joinphrase ?? ""))
+    .join("")
+    .trim();
   const primary = credits[0].artist;
-  return { name: name || primary.name, primaryName: primary.name, mbid: primary.id ?? null };
+  return {
+    name: name || primary.name,
+    primaryName: primary.name,
+    mbid: primary.id ?? null,
+  };
 }
 
 function normalizeDate(raw: string | null): string | null {
@@ -83,7 +95,11 @@ function normalizeDate(raw: string | null): string | null {
   return null;
 }
 
-export function parseDisambiguation(str: string | undefined | null): { explicit: boolean; clean: boolean; hiRes: boolean } {
+export function parseDisambiguation(str: string | undefined | null): {
+  explicit: boolean;
+  clean: boolean;
+  hiRes: boolean;
+} {
   if (!str) return { explicit: false, clean: false, hiRes: false };
   const lower = str.toLowerCase().trim();
   const explicit = /\[explicit\]/i.test(lower);
@@ -105,7 +121,10 @@ function scoreRelease(release: MusicBrainzRelease): number {
   if (dis.clean) score -= 1;
   if (dis.hiRes) score -= 2;
 
-  if (release.country && ALLOWED_COUNTRIES.includes(release.country.toUpperCase())) {
+  if (
+    release.country &&
+    ALLOWED_COUNTRIES.includes(release.country.toUpperCase())
+  ) {
     score += 1;
   }
 
@@ -118,7 +137,9 @@ function releaseDateEpoch(release: MusicBrainzRelease): number {
   return new Date(normalized).getTime() / 1000;
 }
 
-export function pickBestRelease(releases: MusicBrainzRelease[]): MusicBrainzRelease | null {
+export function pickBestRelease(
+  releases: MusicBrainzRelease[],
+): MusicBrainzRelease | null {
   if (releases.length === 0) return null;
   if (releases.length === 1) return releases[0];
 
@@ -136,7 +157,9 @@ export function pickBestRelease(releases: MusicBrainzRelease[]): MusicBrainzRele
   return scored[0].release;
 }
 
-export function parseRecording(recording: MusicBrainzRecording): ParsedMusicBrainzResult {
+export function parseRecording(
+  recording: MusicBrainzRecording,
+): ParsedMusicBrainzResult {
   const artist = parseArtist(recording);
   const releases = recording.releases ?? [];
   const best = pickBestRelease(releases);
@@ -179,7 +202,8 @@ async function musicbrainzFetch(path: string): Promise<Response> {
 }
 
 async function getSupabaseAdmin() {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { supabaseAdmin } =
+    await import("@/integrations/supabase/client.server");
   return supabaseAdmin;
 }
 
@@ -188,7 +212,9 @@ async function getSupabaseAdmin() {
  * Checks DB artist_countries cache first; on miss, fetches from MusicBrainz
  * /artist/{mbid} and checks artist.country AND artist.area.iso-3166-1-codes.
  */
-export async function isArtistInAllowedArea(artistMbid: string | null): Promise<boolean> {
+export async function isArtistInAllowedArea(
+  artistMbid: string | null,
+): Promise<boolean> {
   if (!artistMbid) return false;
 
   const admin = await getSupabaseAdmin();
@@ -222,18 +248,19 @@ export async function isArtistInAllowedArea(artistMbid: string | null): Promise<
 
     // Populate cache
     if (countries.length > 0) {
-      const slug = artist.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase().slice(0, 80);
-      await admin
-        .from("artists")
-        .upsert(
-          {
-            musicbrainz_id: artistMbid,
-            name: artist.name,
-            slug,
-            artist_countries: countries,
-          },
-          { onConflict: "musicbrainz_id" },
-        );
+      const slug = artist.name
+        .replace(/[^a-z0-9]+/gi, "-")
+        .toLowerCase()
+        .slice(0, 80);
+      await admin.from("artists").upsert(
+        {
+          musicbrainz_id: artistMbid,
+          name: artist.name,
+          slug,
+          artist_countries: countries,
+        },
+        { onConflict: "musicbrainz_id" },
+      );
     }
 
     return countries.some((c) => ALLOWED_COUNTRIES.includes(c.toUpperCase()));
@@ -245,8 +272,13 @@ export async function isArtistInAllowedArea(artistMbid: string | null): Promise<
   }
 }
 
-function deduplicateRecordings(recordings: MusicBrainzRecording[]): MusicBrainzRecording[] {
-  const groups = new Map<string, { recording: MusicBrainzRecording; best: MusicBrainzRelease | null }>();
+function deduplicateRecordings(
+  recordings: MusicBrainzRecording[],
+): MusicBrainzRecording[] {
+  const groups = new Map<
+    string,
+    { recording: MusicBrainzRecording; best: MusicBrainzRelease | null }
+  >();
 
   for (const rec of recordings) {
     const credits = rec["artist-credit"];
@@ -269,7 +301,10 @@ function deduplicateRecordings(recordings: MusicBrainzRecording[]): MusicBrainzR
       const oldScore = scoreRelease(existing.best);
       if (newScore > oldScore) {
         groups.set(key, { recording: rec, best });
-      } else if (newScore === oldScore && releaseDateEpoch(best) > releaseDateEpoch(existing.best)) {
+      } else if (
+        newScore === oldScore &&
+        releaseDateEpoch(best) > releaseDateEpoch(existing.best)
+      ) {
         groups.set(key, { recording: rec, best });
       }
     }
@@ -278,17 +313,23 @@ function deduplicateRecordings(recordings: MusicBrainzRecording[]): MusicBrainzR
   return Array.from(groups.values()).map((g) => g.recording);
 }
 
+export function escapeLucene(s: string): string {
+  return s
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/[\t\r\n]/g, ' ');
+}
+
 export async function searchRecordings(
   query: string,
   limit = 8,
   inc = "artists+tags+releases+genres",
   artist?: string,
-): Promise<ParsedMusicBrainzResult[]> {
-  let q: string;
+): Promise<{ results: ParsedMusicBrainzResult[]; error?: string }> {
+  const lowerQuery = escapeLucene(query).toLowerCase();
+  let q = `recording:"${lowerQuery}"`;
   if (artist) {
-    q = `recording:"${query}" AND artist:"${artist}"`;
-  } else {
-    q = query;
+    q += ` AND artist:"${escapeLucene(artist).toLowerCase()}"`;
   }
 
   const res = await musicbrainzFetch(
@@ -296,10 +337,10 @@ export async function searchRecordings(
   );
   if (!res.ok) {
     console.error("[musicbrainz search] error", res.status, res.statusText);
-    return [];
+    return { results: [], error: `MusicBrainz returned ${res.status}` };
   }
   const data = (await res.json()) as MusicBrainzSearchResponse;
-  return deduplicateRecordings(data.recordings ?? []).map(parseRecording);
+  return { results: deduplicateRecordings(data.recordings ?? []).map(parseRecording) };
 }
 
 export async function getRecordingByMbid(
