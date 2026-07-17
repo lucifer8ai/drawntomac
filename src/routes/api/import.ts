@@ -1,6 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { getRecordingByMbid, type ParsedMusicBrainzResult, isArtistInAllowedArea, ALLOWED_COUNTRIES, ALLOWED_ARTISTS } from "@/lib/musicbrainz";
+import {
+  getRecordingByMbid,
+  type ParsedMusicBrainzResult,
+  isArtistInAllowedArea,
+  ALLOWED_COUNTRIES,
+  ALLOWED_ARTISTS,
+} from "@/lib/musicbrainz";
 import { searchGeniusArtwork } from "@/lib/genius";
 import { generateSlug, slugifyBase } from "@/lib/slugify";
 
@@ -11,6 +17,7 @@ const bodySchema = z.object({
   primaryArtistName: z.string().optional(),
   artistMbid: z.string().nullable().optional(),
   releaseGroupMbid: z.string().nullable().optional(),
+  releaseGroupTitle: z.string().nullable().optional(),
   releaseDate: z.string().nullable().optional(),
 });
 
@@ -26,11 +33,15 @@ export const Route = createFileRoute("/api/import")({
         }
         const parsed = bodySchema.safeParse(raw);
         if (!parsed.success) {
-          return Response.json({ error: "Invalid body", issues: parsed.error.issues }, { status: 400 });
+          return Response.json(
+            { error: "Invalid body", issues: parsed.error.issues },
+            { status: 400 },
+          );
         }
         const body = parsed.data;
 
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { supabaseAdmin } =
+          await import("@/integrations/supabase/client.server");
 
         // Check if song already exists
         const { data: existing } = await supabaseAdmin
@@ -42,7 +53,10 @@ export const Route = createFileRoute("/api/import")({
         // If song already exists, just refresh artwork (cheap) and redirect
         if (existing) {
           const geniusLookupName = body.primaryArtistName || body.artistName;
-          const genius = await searchGeniusArtwork(geniusLookupName, body.title);
+          const genius = await searchGeniusArtwork(
+            geniusLookupName,
+            body.title,
+          );
           if (genius.geniusSongId || genius.thumbnailUrl) {
             await supabaseAdmin
               .from("songs")
@@ -59,7 +73,10 @@ export const Route = createFileRoute("/api/import")({
         const geniusLookupName = body.primaryArtistName || body.artistName;
         const [recording, genius] = await Promise.all([
           getRecordingByMbid(body.mbid).catch((err) => {
-            console.warn("[import] getRecordingByMbid failed, proceeding with search data:", (err as Error).message);
+            console.warn(
+              "[import] getRecordingByMbid failed, proceeding with search data:",
+              (err as Error).message,
+            );
             return null;
           }),
           searchGeniusArtwork(geniusLookupName, body.title),
@@ -75,7 +92,8 @@ export const Route = createFileRoute("/api/import")({
         const releaseCountry = recording?.country ?? null;
         const artistNameCheck = body.primaryArtistName || body.artistName;
         if (
-          !releaseCountry || !ALLOWED_COUNTRIES.includes(releaseCountry.toUpperCase())
+          !releaseCountry ||
+          !ALLOWED_COUNTRIES.includes(releaseCountry.toUpperCase())
         ) {
           const isAllowedArtist = ALLOWED_ARTISTS.some(
             (a) => artistNameCheck.toLowerCase() === a.toLowerCase(),
@@ -92,7 +110,8 @@ export const Route = createFileRoute("/api/import")({
         }
 
         // Determine artist slug + id
-        const artistSlug = slugifyBase(body.artistName).slice(0, 80) || body.mbid;
+        const artistSlug =
+          slugifyBase(body.artistName).slice(0, 80) || body.mbid;
         const { data: artist, error: artistErr } = await supabaseAdmin
           .from("artists")
           .upsert(
@@ -126,9 +145,33 @@ export const Route = createFileRoute("/api/import")({
 
         // Generate slug
         const slug = generateSlug(body.title);
-        const releaseGroupMbid = recording?.releaseGroupMbid ?? body.releaseGroupMbid ?? null;
+        const releaseGroupMbid =
+          recording?.releaseGroupMbid ?? body.releaseGroupMbid ?? null;
         const releaseDate = recording?.releaseDate ?? body.releaseDate ?? null;
         const tags = recording?.tags ?? [];
+
+        // Upsert release group if mbid is present
+        let releaseGroupId: string | null = null;
+        if (releaseGroupMbid) {
+          const rgTitle = body.releaseGroupTitle || body.title;
+          const releaseGroupSlug = generateSlug(rgTitle);
+          // release_groups is a new table — not yet in generated Supabase types
+          const { data: rg } = await (supabaseAdmin.from as any)("release_groups")
+            .upsert(
+              {
+                musicbrainz_id: releaseGroupMbid,
+                title: rgTitle,
+                slug: releaseGroupSlug,
+                artist_id: artistId,
+                image_url: coverUrl,
+                release_date: recording?.releaseDate ?? body.releaseDate ?? null,
+              },
+              { onConflict: "musicbrainz_id" },
+            )
+            .select("id")
+            .single();
+          releaseGroupId = rg?.id ?? null;
+        }
 
         const songRow = {
           title: body.title,
@@ -140,12 +183,12 @@ export const Route = createFileRoute("/api/import")({
           genre_tags: tags,
           credits: null,
           release_group_mbid: releaseGroupMbid,
+          release_group_id: releaseGroupId,
           country: releaseCountry,
           release_date: releaseDate,
         };
 
-        const { error: songErr } = await supabaseAdmin
-          .from("songs")
+        const { error: songErr } = await (supabaseAdmin.from as any)("songs")
           .upsert(songRow, { onConflict: "musicbrainz_id" });
 
         if (songErr) {

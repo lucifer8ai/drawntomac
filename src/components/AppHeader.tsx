@@ -178,7 +178,11 @@ export function AppHeader({
           toast("Artist page not available yet");
         }
       } else if (hit.category === "album") {
-        toast("Album pages coming soon");
+        if (hit.slug) {
+          navigate({ to: "/album/$slug" as never, params: { slug: hit.slug } as never });
+        } else {
+          toast("Album page not available");
+        }
       }
     } catch {
       toast.error("Something went wrong. Try again.");

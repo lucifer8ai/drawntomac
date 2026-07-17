@@ -44,6 +44,7 @@ interface DBAlbumHit {
   artist_name: string | null;
   cover_url: string | null;
   song_count: number;
+  slug?: string;
 }
 
 export interface CategorizedResults {
@@ -96,7 +97,7 @@ function toAlbumHit(r: DBAlbumHit): SearchHit {
     mbid: r.release_group_mbid,
     title: r.title,
     subtitle: r.artist_name ?? "",
-    slug: null,
+    slug: r.slug ?? null,
     thumbnailUrl: r.cover_url,
     releaseGroupMbid: r.release_group_mbid,
   };
