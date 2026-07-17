@@ -77,7 +77,9 @@ CREATE POLICY "authed update release_groups" ON public.release_groups FOR UPDATE
 -- SELECT COUNT(*) FROM songs WHERE release_group_id IS NOT NULL; -- should match songs with release_group_mbid
 
 -- Stage 4: Replace search_local_albums to query release_groups directly
--- (was grouping from songs.release_group_mbid in Stage 2)
+-- Must DROP first — return type changed (added slug column)
+DROP FUNCTION IF EXISTS public.search_local_albums(TEXT, INT);
+
 CREATE OR REPLACE FUNCTION public.search_local_albums(
   p_query TEXT,
   p_limit INT DEFAULT 3
@@ -122,3 +124,28 @@ BEGIN
   LIMIT p_limit;
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION public.search_local_albums(TEXT, INT) TO anon, authenticated, service_role;
+
+-- Album engagement RPC — requires release_group_id on songs (created above)
+CREATE OR REPLACE FUNCTION public.get_album_engagement(
+  p_release_group_id UUID
+) RETURNS TABLE(
+  total_hears BIGINT,
+  total_likes BIGINT,
+  total_reviews BIGINT,
+  total_listeners BIGINT
+)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT
+    COUNT(*) FILTER (WHERE de.type = 'heard') AS total_hears,
+    COUNT(*) FILTER (WHERE de.type = 'like') AS total_likes,
+    COUNT(*) FILTER (WHERE de.type = 'review') AS total_reviews,
+    COUNT(DISTINCT de.user_id) AS total_listeners
+  FROM public.diary_entries de
+  JOIN public.songs s ON s.id = de.song_id
+  WHERE s.release_group_id = p_release_group_id;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_album_engagement(UUID) TO anon, authenticated, service_role;
