@@ -4,31 +4,24 @@ import {
   type ParsedMusicBrainzResult,
 } from "@/lib/musicbrainz";
 
+export type SearchCategory = "song" | "artist" | "album";
+
 export interface SearchHit {
+  category: SearchCategory;
   mbid: string;
   title: string;
-  artistName: string;
-  primaryArtistName: string;
-  artistMbid: string | null;
-  releaseGroupMbid: string | null;
-  releaseDate: string | null;
+  subtitle: string;
+  slug: string | null;
   thumbnailUrl: string | null;
+  // Song-specific fields (used by /api/import)
+  artistName?: string;
+  primaryArtistName?: string;
+  artistMbid?: string | null;
+  releaseGroupMbid?: string | null;
+  releaseDate?: string | null;
 }
 
-function toHit(r: ParsedMusicBrainzResult): SearchHit {
-  return {
-    mbid: r.mbid,
-    title: r.title,
-    artistName: r.artistName,
-    primaryArtistName: r.primaryArtistName,
-    artistMbid: r.artistMbid,
-    releaseGroupMbid: r.releaseGroupMbid,
-    releaseDate: r.releaseDate,
-    thumbnailUrl: null,
-  };
-}
-
-interface DBHit {
+interface DBSongHit {
   song_id: string;
   title: string;
   slug: string;
@@ -37,16 +30,75 @@ interface DBHit {
   musicbrainz_id: string | null;
 }
 
-function toHitFromDB(r: DBHit): SearchHit {
+interface DBArtistHit {
+  artist_id: string;
+  name: string;
+  slug: string;
+  image_url: string | null;
+  musicbrainz_id: string | null;
+}
+
+interface DBAlbumHit {
+  release_group_mbid: string;
+  title: string;
+  artist_name: string | null;
+  cover_url: string | null;
+  song_count: number;
+}
+
+export interface CategorizedResults {
+  songs: SearchHit[];
+  artists: SearchHit[];
+  albums: SearchHit[];
+}
+
+function toHit(r: ParsedMusicBrainzResult): SearchHit {
   return {
+    category: "song",
+    mbid: r.mbid,
+    title: r.title,
+    subtitle: r.artistName,
+    slug: null,
+    thumbnailUrl: null,
+    artistName: r.artistName,
+    primaryArtistName: r.primaryArtistName,
+    artistMbid: r.artistMbid,
+    releaseGroupMbid: r.releaseGroupMbid,
+    releaseDate: r.releaseDate,
+  };
+}
+
+function toSongHit(r: DBSongHit): SearchHit {
+  return {
+    category: "song",
     mbid: r.musicbrainz_id ?? r.song_id,
     title: r.title,
-    artistName: r.artist_name ?? "Unknown",
-    primaryArtistName: r.artist_name ?? "Unknown",
-    artistMbid: null,
-    releaseGroupMbid: null,
-    releaseDate: null,
+    subtitle: r.artist_name ?? "Unknown",
+    slug: r.slug,
     thumbnailUrl: r.thumbnail_url,
+  };
+}
+
+function toArtistHit(r: DBArtistHit): SearchHit {
+  return {
+    category: "artist",
+    mbid: r.musicbrainz_id ?? r.artist_id,
+    title: r.name,
+    subtitle: "",
+    slug: r.slug,
+    thumbnailUrl: r.image_url,
+  };
+}
+
+function toAlbumHit(r: DBAlbumHit): SearchHit {
+  return {
+    category: "album",
+    mbid: r.release_group_mbid,
+    title: r.title,
+    subtitle: r.artist_name ?? "",
+    slug: null,
+    thumbnailUrl: r.cover_url,
+    releaseGroupMbid: r.release_group_mbid,
   };
 }
 
@@ -59,7 +111,7 @@ export const Route = createFileRoute("/api/search")({
       GET: async ({ request }) => {
         const url = new URL(request.url);
         const q = (url.searchParams.get("q") ?? "").normalize("NFC").trim();
-        if (!q) return Response.json([]);
+        if (!q) return Response.json({ songs: [], artists: [], albums: [] });
         if (q.length > 200) {
           return Response.json({ error: "Query too long" }, { status: 400 });
         }
@@ -93,36 +145,35 @@ async function doSearch(
   const timeout = setTimeout(() => controller.abort(), 10_000);
 
   try {
-    // 1. Local DB search
-    let localHits: SearchHit[] = [];
-    try {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      // RPC function is new (migration not yet in generated types); cast to any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabaseAdmin.rpc as any)("search_local_songs", {
-        p_query: q,
-        p_limit: 5,
-      });
-      if (!error && data) {
-        localHits = (data as DBHit[]).map(toHitFromDB);
-      }
-    } catch (err) {
-      console.error("[search] local RPC failed, falling back to MB only", err);
-    }
+    // 1. Run all three local searches in parallel
+    const [songsRes, artistsRes, albumsRes] = await Promise.allSettled([
+      searchLocalSongs(q),
+      searchLocalArtists(q),
+      searchLocalAlbums(q),
+    ]);
 
-    // 2. MusicBrainz search (if local results < 8)
-    let mbHits: SearchHit[] = [];
-    if (localHits.length < 8) {
+    const localSongs = songsRes.status === "fulfilled" ? songsRes.value : [];
+    const localArtists = artistsRes.status === "fulfilled" ? artistsRes.value : [];
+    const localAlbums = albumsRes.status === "fulfilled" ? albumsRes.value : [];
+
+    // Log failures
+    if (songsRes.status === "rejected") console.error("[search] local songs RPC failed", songsRes.reason);
+    if (artistsRes.status === "rejected") console.error("[search] local artists RPC failed", artistsRes.reason);
+    if (albumsRes.status === "rejected") console.error("[search] local albums RPC failed", albumsRes.reason);
+
+    // 2. MusicBrainz song search (if local songs < 8)
+    let mbSongs: SearchHit[] = [];
+    if (localSongs.length < 8) {
       const { results, error } = await searchRecordings(
         q,
-        Math.max(8 - localHits.length, 3),
+        Math.max(8 - localSongs.length, 3),
         "artists+tags+releases+genres",
         artist,
       );
 
       if (error) {
         console.error("[search] MusicBrainz error:", error);
-        if (localHits.length === 0) {
+        if (localSongs.length === 0 && localArtists.length === 0 && localAlbums.length === 0) {
           clearTimeout(timeout);
           return Response.json(
             { error: "Search temporarily unavailable" },
@@ -130,31 +181,29 @@ async function doSearch(
           );
         }
       } else {
-        mbHits = results.map(toHit);
+        mbSongs = results.map(toHit);
       }
     }
 
-    // 3. Dedup MB results against local by musicbrainz_id
-    const localMbids = new Set(
-      localHits.map((h) => h.mbid).filter(Boolean),
-    );
-    const dedupedMbHits = mbHits.filter(
-      (h) => !localMbids.has(h.mbid),
-    );
-
-    const hits = [...localHits, ...dedupedMbHits];
+    // 3. Dedup MB songs against local by mbid
+    const localMbids = new Set(localSongs.map((h) => h.mbid));
+    const dedupedMbSongs = mbSongs.filter((h) => !localMbids.has(h.mbid));
 
     console.log("[search]", {
       query: q,
-      localCount: localHits.length,
-      mbCount: mbHits.length,
-      dedupedMbCount: dedupedMbHits.length,
-      totalHits: hits.length,
+      localSongs: localSongs.length,
+      mbSongs: mbSongs.length,
+      localArtists: localArtists.length,
+      localAlbums: localAlbums.length,
       durationMs: Date.now() - start,
     });
 
     clearTimeout(timeout);
-    return Response.json(hits);
+    return Response.json({
+      songs: [...localSongs, ...dedupedMbSongs],
+      artists: localArtists,
+      albums: localAlbums,
+    } satisfies CategorizedResults);
   } catch (err) {
     clearTimeout(timeout);
     console.error("[search]", err);
@@ -163,4 +212,37 @@ async function doSearch(
       { status: 429 },
     );
   }
+}
+
+async function searchLocalSongs(q: string): Promise<SearchHit[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabaseAdmin.rpc as any)("search_local_songs", {
+    p_query: q,
+    p_limit: 5,
+  });
+  if (error || !data) return [];
+  return (data as DBSongHit[]).map(toSongHit);
+}
+
+async function searchLocalArtists(q: string): Promise<SearchHit[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabaseAdmin.rpc as any)("search_local_artists", {
+    p_query: q,
+    p_limit: 3,
+  });
+  if (error || !data) return [];
+  return (data as DBArtistHit[]).map(toArtistHit);
+}
+
+async function searchLocalAlbums(q: string): Promise<SearchHit[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabaseAdmin.rpc as any)("search_local_albums", {
+    p_query: q,
+    p_limit: 3,
+  });
+  if (error || !data) return [];
+  return (data as DBAlbumHit[]).map(toAlbumHit);
 }

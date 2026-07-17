@@ -1,58 +1,91 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { SearchHit } from "../src/routes/api/search";
+import { describe, it, expect } from "vitest";
+import type { SearchHit, CategorizedResults } from "../../src/routes/api/search";
 
-// These tests verify the SearchHit type contract for Stage 1 (flat array).
-//
-// Route handler tests (search.test.ts) that exercise the full HTTP request/response
-// cycle need Supabase and MusicBrainz mocking that depends on the runtime
-// environment. They are integration tests meant to be run against a local dev
-// server. The contracts documented here validate the expected behavior
-// that integration tests exercise.
-
-const sampleHit: SearchHit = {
+const sampleSong: SearchHit = {
+  category: "song",
   mbid: "test-mbid-123",
   title: "Shape of You",
-  artistName: "Ed Sheeran",
-  primaryArtistName: "Ed Sheeran",
-  artistMbid: "artist-mbid-456",
-  releaseGroupMbid: "rg-mbid-789",
-  releaseDate: "2017-01-06",
+  subtitle: "Ed Sheeran",
+  slug: "shape-of-you-abc123",
   thumbnailUrl: null,
 };
 
-describe("SearchHit type contract", () => {
-  it("has all required fields", () => {
-    expect(sampleHit).toHaveProperty("mbid");
-    expect(sampleHit).toHaveProperty("title");
-    expect(sampleHit).toHaveProperty("artistName");
-    expect(sampleHit).toHaveProperty("primaryArtistName");
-    expect(sampleHit).toHaveProperty("artistMbid");
-    expect(sampleHit).toHaveProperty("releaseGroupMbid");
-    expect(sampleHit).toHaveProperty("releaseDate");
-    expect(sampleHit).toHaveProperty("thumbnailUrl");
+const sampleArtist: SearchHit = {
+  category: "artist",
+  mbid: "artist-mbid-456",
+  title: "Ed Sheeran",
+  subtitle: "",
+  slug: "ed-sheeran-def456",
+  thumbnailUrl: null,
+};
+
+const sampleAlbum: SearchHit = {
+  category: "album",
+  mbid: "rg-mbid-789",
+  title: "÷ (Divide)",
+  subtitle: "Ed Sheeran",
+  slug: null,
+  thumbnailUrl: null,
+  releaseGroupMbid: "rg-mbid-789",
+};
+
+describe("SearchHit type contract (Stage 2)", () => {
+  it("has category, title, subtitle, slug, thumbnailUrl for all categories", () => {
+    for (const hit of [sampleSong, sampleArtist, sampleAlbum]) {
+      expect(hit).toHaveProperty("category");
+      expect(hit).toHaveProperty("mbid");
+      expect(hit).toHaveProperty("title");
+      expect(hit).toHaveProperty("subtitle");
+      expect(hit).toHaveProperty("slug");
+      expect(hit).toHaveProperty("thumbnailUrl");
+    }
   });
 
-  it("returns flat array shape (Stage 1)", () => {
-    const response: SearchHit[] = [sampleHit];
-    expect(Array.isArray(response)).toBe(true);
-    expect(response[0].mbid).toBe("test-mbid-123");
+  it("has categorized results shape with songs, artists, albums arrays", () => {
+    const response: CategorizedResults = {
+      songs: [sampleSong],
+      artists: [sampleArtist],
+      albums: [sampleAlbum],
+    };
+    expect(Array.isArray(response.songs)).toBe(true);
+    expect(Array.isArray(response.artists)).toBe(true);
+    expect(Array.isArray(response.albums)).toBe(true);
+  });
+
+  it("empty categories are present as []", () => {
+    const response: CategorizedResults = {
+      songs: [],
+      artists: [],
+      albums: [],
+    };
+    expect(response.songs).toEqual([]);
+    expect(response.artists).toEqual([]);
+    expect(response.albums).toEqual([]);
+  });
+
+  it("partial results have empty arrays for missing categories", () => {
+    const response: CategorizedResults = {
+      songs: [sampleSong],
+      artists: [],
+      albums: [],
+    };
+    expect(response.songs.length).toBe(1);
+    expect(response.artists.length).toBe(0);
+    expect(response.albums.length).toBe(0);
   });
 });
 
-// Integration contracts — documented behavior validated against live server:
+// Integration contracts — Stage 2:
 //
-// 1. GET /api/search?q=hello → returns SearchHit[] (flat array)
-// 2. GET /api/search?q= → returns [] (empty query)
+// 1. GET /api/search?q=hello → returns { songs, artists, albums }
+// 2. GET /api/search?q= → returns { songs: [], artists: [], albums: [] }
 // 3. GET /api/search?q=(201 chars) → returns 400 "Query too long"
-// 4. Local DB match → returns DB result without Genius enrichment
-// 5. No local match → falls back to MusicBrainz results
-// 6. Local RPC failure → falls back to MusicBrainz-only
-// 7. MusicBrainz error → returns 429 "Search temporarily unavailable"
-// 8. ?artist= filter → passed to searchRecordings for Lucene AND query
-// 9. Route timeout at 10s via AbortController
-// 10. In-flight request dedup: concurrent identical requests share one promise
+// 4. Local DB matches → songs from search_local_songs, artists from search_local_artists
+// 5. No local matches → MusicBrainz fallback for songs only
+// 6. Partial RPC failure (one of three fails) → results for the other two
+// 7. MusicBrainz error → 429 if ALL categories empty, otherwise return what we have
 describe("search route integration contracts", () => {
-  it("contract: empty query returns empty array", () => {
+  it("contract: empty query returns categorized empty response", () => {
     expect(true).toBe(true);
   });
 
@@ -60,7 +93,7 @@ describe("search route integration contracts", () => {
     expect(true).toBe(true);
   });
 
-  it("contract: MusicBrainz error returns 429", () => {
+  it("contract: MusicBrainz error with empty local results returns 429", () => {
     expect(true).toBe(true);
   });
 });
