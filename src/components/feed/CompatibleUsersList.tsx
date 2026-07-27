@@ -130,7 +130,7 @@ const UserCard = memo(function UserCard({
                 <div className="flex h-1.5 flex-1 rounded-full overflow-hidden">
                   <div className="bg-[var(--color-heard)]/30" style={{ width: `${heardPct}%` }} />
                   <div className="bg-[var(--color-like)]" style={{ width: `${likedPct}%` }} />
-                  <div className="bg-[var(--color-want)]" style={{ width: `${reviewedPct}%` }} />
+                  <div className="bg-[var(--color-save)]" style={{ width: `${reviewedPct}%` }} />
                   <div className="bg-muted-foreground/50" style={{ width: `${wantPct}%` }} />
                 </div>
                 <span className="flex-shrink-0 text-xs font-medium text-muted-foreground tabular-nums">

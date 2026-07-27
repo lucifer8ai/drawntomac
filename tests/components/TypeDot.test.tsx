@@ -28,10 +28,10 @@ describe("TypeDot", () => {
     expect(dot.className).toContain("bg-want");
   });
 
-  it("renders review dot with foreground color and extra ring", () => {
+  it("renders review dot with save color and extra ring", () => {
     render(<TypeDot type="review" />);
     const dot = screen.getByLabelText("reviewed");
-    expect(dot.className).toContain("bg-foreground");
+    expect(dot.className).toContain("bg-save");
     expect(dot.className).toContain("ring-white/30");
   });
 

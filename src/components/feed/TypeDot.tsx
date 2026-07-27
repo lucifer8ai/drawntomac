@@ -15,7 +15,7 @@ const colorMap: Record<string, string> = {
   like: "bg-like",
   dislike: "bg-dislike",
   want: "bg-want",
-  review: "bg-foreground",
+  review: "bg-save",
 };
 
 export function TypeDot({ type }: TypeDotProps) {
