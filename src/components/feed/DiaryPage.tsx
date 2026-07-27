@@ -26,7 +26,7 @@ export function DiaryPage() {
       .from("diary_entries")
       .select(`
         id, type, created_at, song_id,
-        song:songs ( id, title, slug, genius_thumbnail_url, artist:artists ( name ) )
+        song:songs ( id, title, slug, genius_thumbnail_url, artist:artists!songs_artist_id_fkey ( name ) )
       `)
       .eq("user_id", userId)
       .order("created_at", { ascending: false })

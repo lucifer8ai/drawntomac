@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { FollowListSheet } from "./FollowListSheet";
-import { ProfileStatsRow } from "./ProfileStatsRow";
+import { ProfileTasteCard } from "./ProfileTasteCard";
 import { useCompatibility, getCompatibilityTier } from "@/hooks/useCompatibility";
 import { useProfileStats } from "@/hooks/useProfileStats";
 import { toast } from "sonner";
@@ -47,7 +47,7 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
     isOwnProfile ? null : viewerId,
     isOwnProfile ? null : (profile?.id ?? null),
   );
-  const { stats: tasteStats, loading: statsLoading } = useProfileStats(profile?.id ?? null);
+  const { stats: tasteStats, loading: statsLoading, error: tasteError, retry: statsRetry } = useProfileStats(profile?.id ?? null);
 
   useEffect(() => {
     if (!username) return;
@@ -152,15 +152,6 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
             </div>
             <div className="h-9 w-24 animate-skeleton rounded-lg" />
           </div>
-          <div className="flex justify-around py-3">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex flex-col items-center gap-1.5">
-                <div className="h-5 w-5 animate-skeleton rounded" />
-                <div className="h-6 w-8 animate-skeleton rounded" />
-                <div className="h-3 w-10 animate-skeleton rounded" />
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     );
@@ -184,8 +175,6 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
     : profile.country ?? null;
 
   const tier = compatibility ? getCompatibilityTier(compatibility.sharedSongs) : null;
-
-  const allStatsZero = tasteStats.heard === 0 && tasteStats.liked === 0 && tasteStats.disliked === 0 && tasteStats.want === 0;
 
   return (
     <>
@@ -292,18 +281,16 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
             )}
           </div>
 
-          {/* #d.taste section */}
-          <div className="pt-4 pb-1">
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
-              #d.taste
-            </span>
+          <div className="pt-2">
+            <ProfileTasteCard
+              stats={tasteStats}
+              loading={statsLoading}
+              error={tasteError}
+              isOwnProfile={!!isOwnProfile}
+              username={profile.username}
+              onRetry={statsRetry}
+            />
           </div>
-          <ProfileStatsRow stats={tasteStats} loading={statsLoading} />
-          {allStatsZero && !isOwnProfile && (
-            <p className="text-xs text-muted-foreground text-center py-1">
-              No activity logged yet.
-            </p>
-          )}
 
           {/* Compatibility */}
           {compatibility && compatibility.sharedSongs > 0 && !isOwnProfile && (
@@ -336,7 +323,8 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
                 </div>
                 <div className="mt-3 pt-3 border-t border-border/20">
                   <Link
-                    to="/home"
+                    to="/connect/$username"
+                    params={{ username: profile.username }}
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Explore shared music →
