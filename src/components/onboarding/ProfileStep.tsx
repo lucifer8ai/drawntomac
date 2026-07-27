@@ -138,10 +138,6 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
     }
   }
 
-  function handleSkip() {
-    onComplete();
-  }
-
   const canContinue = USERNAME_RE.test(username) && !usernameError && !disabled;
 
   return (
@@ -297,15 +293,6 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
         aria-disabled={!canContinue}
       >
         {saving ? "Saving…" : "Continue"}
-      </button>
-
-      <button
-        type="button"
-        onClick={handleSkip}
-        disabled={disabled}
-        className="w-full min-h-[44px] rounded-lg text-sm text-muted-foreground hover:text-foreground hover:underline transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        Skip for now
       </button>
     </div>
   );
