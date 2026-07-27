@@ -47,7 +47,7 @@ export const Route = createFileRoute("/song/$slug")({
   loader: async ({ params }) => {
     const { data: song, error } = await supabase
       .from("songs")
-      .select("*, artist:artists(*)")
+      .select("*, artist:artists!songs_artist_id_fkey(*)")
       .eq("slug", params.slug)
       .maybeSingle();
 

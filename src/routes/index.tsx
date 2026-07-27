@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import signBg from "../../picture/Untitled - 11 July 2026 at 08.54.03.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/")({
   component: AuthPage,
 });
 
-// --- Legendary Song Wall — dense typographic texture bridging eras ---
+// --- ListenerWall — preserved as loading state + fallback ---
 
 const LEGENDARY_SONGS = [
   "Bohemian Rhapsody", "Billie Jean", "Like a Prayer", "Purple Rain",
@@ -52,7 +53,6 @@ const LEGENDARY_SONGS = [
 function ListenerWall() {
   return (
     <div className="relative h-full w-full overflow-hidden select-none" style={{ backgroundColor: "oklch(0.05 0.005 280)" }}>
-      {/* Subtle static texture overlay */}
       <div
         className="pointer-events-none absolute inset-0 z-10"
         style={{
@@ -61,8 +61,6 @@ function ListenerWall() {
           backgroundSize: "128px 128px",
         }}
       />
-
-      {/* Grid — record sleeve layout lines */}
       <div className="absolute inset-0 opacity-[0.04]">
         {Array.from({ length: 20 }, (_, i) => (
           <div key={`h-${i}`} className="absolute left-0 right-0" style={{ top: `${(i / 19) * 100}%`, height: "1px", backgroundColor: "oklch(0.90 0.01 90)" }} />
@@ -71,12 +69,8 @@ function ListenerWall() {
           <div key={`v-${i}`} className="absolute top-0 bottom-0" style={{ left: `${x}%`, width: "1px", backgroundColor: "oklch(0.90 0.01 90)" }} />
         ))}
       </div>
-
-      {/* Accent bars — understated */}
       <div className="absolute top-0 left-0 right-0 h-[3px] opacity-60" style={{ backgroundColor: "oklch(0.85 0 0)" }} />
       <div className="absolute bottom-0 left-0 right-0 h-[3px] opacity-40" style={{ backgroundColor: "oklch(0.85 0 0)" }} />
-
-      {/* Dense song names — the wall of music */}
       <div
         className="pointer-events-none absolute inset-0 overflow-hidden opacity-70"
         style={{
@@ -92,8 +86,6 @@ function ListenerWall() {
       >
         {LEGENDARY_SONGS}
       </div>
-
-      {/* Glowing pulse — the community heartbeat */}
       <div className="absolute left-[52%] top-[55%] -translate-x-1/2 -translate-y-1/2 z-20">
         <div
           className="h-3 w-3 rounded-full"
@@ -117,8 +109,6 @@ function ListenerWall() {
           }}
         />
       </div>
-
-      {/* Stat callouts */}
       <div className="absolute bottom-[16%] left-[8%] z-20">
         <div className="text-[10px] uppercase tracking-[0.15em] opacity-40" style={{ color: "oklch(0.90 0.01 90)" }}>
           Songs Logged
@@ -186,26 +176,15 @@ function AuthForm() {
   }
 
   return (
-    <div className="flex h-full flex-col justify-center px-[clamp(2rem,10%,5rem)] py-12">
-      <h1 className="mb-1 text-[clamp(2rem,4vw,2.75rem)] font-extrabold italic tracking-tight" style={{ color: "oklch(0.85 0 0)" }}>
-        #drawnTo
-      </h1>
-      <p className="mb-3 font-light italic text-[clamp(1rem,1.5vw,1.25rem)] text-muted-foreground">
-        i don&apos;t just listen, i feel it
-      </p>
-      <p className="mb-8 text-xs font-medium tracking-wide uppercase text-muted-foreground/60">
-        Log · Review · Connect
-      </p>
-
+    <>
       <div className="mb-8 grid grid-cols-2 rounded-full bg-input/50 p-1">
         {(["signin", "signup"] as const).map((opt) => (
           <button
             type="button"
             key={opt}
-            type="button"
             onClick={() => setMode(opt)}
             className={`rounded-full py-2.5 text-sm font-semibold transition-all ${
-              mode === opt ? "bg-foreground text-background" : "bg-transparent text-foreground/50"
+              mode === opt ? "bg-foreground text-background" : "bg-transparent text-foreground/60"
             }`}
           >
             {opt === "signin" ? "Sign in" : "Sign up"}
@@ -270,17 +249,7 @@ function AuthForm() {
           Continue with Google
         </button>
       </form>
-    </div>
-  );
-}
-
-// --- Philosophy line ---
-
-function PhilosophyLine() {
-  return (
-    <div className="absolute bottom-8 left-0 right-0 z-10 text-center font-light italic text-[clamp(0.875rem,1.2vw,1.1rem)] text-muted-foreground">
-      Music hits different when you share it with the right people.
-    </div>
+    </>
   );
 }
 
@@ -289,6 +258,8 @@ function PhilosophyLine() {
 function AuthPage() {
   const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
+  const [imageState, setImageState] = useState<"loading" | "loaded" | "error">("loading");
+  const imageRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -306,27 +277,93 @@ function AuthPage() {
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
 
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setImageState("loaded");
+    img.onerror = () => setImageState("error");
+    img.src = signBg;
+  }, []);
+
   if (checking) return null;
 
+  const showListenerWall = imageState !== "loaded";
+
   return (
-    <main className="relative flex min-h-screen w-full flex-col md:flex-row" style={{ backgroundColor: "oklch(0.05 0.005 280)" }}>
-      {/* Left: Listener Wall */}
-      <div className="relative h-[45vh] md:h-screen md:w-[55%] overflow-hidden">
+    <main className="relative h-dvh w-full overflow-hidden" style={{ backgroundColor: "oklch(0.04 0.002 280)" }}>
+      {/* ListenerWall — loading state & fallback */}
+      <div
+        className={`absolute inset-0 transition-opacity duration-500 ${
+          showListenerWall ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        style={{
+          animationDuration:
+            typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+              ? "0.01ms"
+              : undefined,
+        }}
+      >
         <ListenerWall />
-        {/* Mobile gradient fade */}
-        <div
-          className="absolute inset-x-0 bottom-0 h-16 md:hidden"
-          style={{
-            background: "linear-gradient(to bottom, transparent, oklch(0.04 0.002 280))",
-          }}
+      </div>
+
+      {/* Background image */}
+      <div
+        className={`absolute inset-0 transition-opacity duration-500 ${
+          imageState === "loaded" ? "opacity-100" : "opacity-0"
+        }`}
+        style={{
+          animationDuration:
+            typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+              ? "0.01ms"
+              : undefined,
+        }}
+      >
+        <img
+          ref={imageRef}
+          src={signBg}
+          alt=""
+          className="h-full w-full object-cover object-[center_30%]"
         />
       </div>
 
-      {/* Right: Auth panel */}
-      <div className="relative flex min-h-[55vh] md:min-h-screen md:w-[45%] flex-col bg-background">
+      {/* Gradient overlay */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: `linear-gradient(
+            to bottom,
+            transparent 0%,
+            oklch(0.04 0.002 280 / 0.15) 35%,
+            oklch(0.04 0.002 280 / 0.45) 55%,
+            oklch(0.04 0.002 280 / 0.75) 70%,
+            oklch(0.04 0.002 280 / 0.92) 85%,
+            oklch(0.04 0.002 280) 100%
+          )`,
+        }}
+      />
+
+      {/* Radial vignette */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: "radial-gradient(ellipse at center, transparent 55%, oklch(0 0 0 / 0.25) 100%)",
+        }}
+      />
+
+      {/* Auth card */}
+      <div
+        className="absolute z-20 right-[clamp(1.5rem,6vw,6rem)] top-1/2 -translate-y-1/2
+                   w-[min(420px,88vw)] rounded-2xl border bg-background
+                   p-[clamp(1.5rem,4vw,2.5rem)]
+                   max-md:right-0 max-md:left-0 max-md:top-auto max-md:bottom-0
+                   max-md:translate-y-0 max-md:w-full
+                   max-md:rounded-b-none max-md:rounded-t-[20px]
+                   max-md:border-transparent max-md:border-t max-md:pb-10
+                   shadow-2xl shadow-black/20"
+      >
         <AuthForm />
-        <PhilosophyLine />
       </div>
+
+
     </main>
   );
 }

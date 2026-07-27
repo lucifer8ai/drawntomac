@@ -101,10 +101,11 @@ describe("DiscoverPage", () => {
     });
   });
 
-  it("renders Your People section when authenticated", async () => {
+  it("renders People section when authenticated", async () => {
     render(<DiscoverPage />);
     await waitFor(() => {
-      expect(screen.getByText("Your People")).toBeTruthy();
+      const matches = screen.getAllByText("People");
+      expect(matches.length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -115,13 +116,13 @@ describe("DiscoverPage", () => {
     });
   });
 
-  it("hides Your People when anonymous", async () => {
+  it("hides People when anonymous", async () => {
     mockUserId = null;
     render(<DiscoverPage />);
     await waitFor(() => {
       expect(screen.getByText("What's Hot")).toBeTruthy();
     });
-    expect(screen.queryByText("Your People")).toBeFalsy();
+    expect(screen.queryByText("People")).toBeFalsy();
   });
 
   it("renders anon CTA when anonymous", async () => {

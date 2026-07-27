@@ -119,12 +119,16 @@ export const Route = createFileRoute("/api/search")({
 
         const artist =
           (url.searchParams.get("artist") ?? "").trim() || undefined;
+        const language =
+          (url.searchParams.get("language") ?? "").trim() || undefined;
+        const era =
+          (url.searchParams.get("era") ?? "").trim() || undefined;
 
-        const cacheKey = `${q}|${artist ?? ""}`;
+        const cacheKey = `${q}|${artist ?? ""}|${language ?? ""}|${era ?? ""}`;
         const pending = pendingRequests.get(cacheKey);
         if (pending) return pending;
 
-        const promise = doSearch(q, artist);
+        const promise = doSearch(q, artist, language, era);
         pendingRequests.set(cacheKey, promise);
         try {
           return await promise;
@@ -139,6 +143,8 @@ export const Route = createFileRoute("/api/search")({
 async function doSearch(
   q: string,
   artist?: string,
+  language?: string,
+  era?: string,
 ): Promise<Response> {
   const start = Date.now();
 
@@ -148,7 +154,7 @@ async function doSearch(
   try {
     // 1. Run all three local searches in parallel
     const [songsRes, artistsRes, albumsRes] = await Promise.allSettled([
-      searchLocalSongs(q),
+      searchLocalSongs(q, language, era),
       searchLocalArtists(q),
       searchLocalAlbums(q),
     ]);
@@ -215,12 +221,14 @@ async function doSearch(
   }
 }
 
-async function searchLocalSongs(q: string): Promise<SearchHit[]> {
+async function searchLocalSongs(q: string, language?: string, era?: string): Promise<SearchHit[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabaseAdmin.rpc as any)("search_local_songs", {
     p_query: q,
-    p_limit: 5,
+    p_limit: 8,
+    p_language: language || null,
+    p_era: era || null,
   });
   if (error || !data) return [];
   return (data as DBSongHit[]).map(toSongHit);

@@ -2,6 +2,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { PublicProfile } from "@/components/profile/PublicProfile";
 
+Object.defineProperty(window, "matchMedia", {
+  writable: true,
+  configurable: true,
+  value: vi.fn().mockReturnValue({
+    matches: false,
+    media: "",
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  } satisfies MediaQueryList),
+});
+
 const { mockSupabase } = vi.hoisted(() => ({
   mockSupabase: {
     from: vi.fn(),
@@ -28,7 +43,7 @@ vi.mock("@/hooks/useCompatibility", () => ({
 }));
 
 vi.mock("@/hooks/useProfileStats", () => ({
-  useProfileStats: () => ({ stats: { heard: 0, liked: 0, disliked: 0, want: 0 }, loading: false }),
+  useProfileStats: () => ({ stats: { heard: 0, liked: 0, disliked: 0, want: 0, review: 0 }, loading: false, error: null, retry: vi.fn() }),
 }));
 
 vi.mock("@/components/profile/FollowListSheet", () => ({
@@ -177,13 +192,15 @@ describe("PublicProfile", () => {
     expect(screen.queryByRole("button", { name: /Follow @alice/ })).toBeFalsy();
   });
 
-  it("shows #d.taste section header", async () => {
+  it("renders taste profile card with bar chart", async () => {
     setupSupabaseResponse();
 
     render(<PublicProfile username="alice" viewerId="viewer-1" />);
 
     await waitFor(() => {
-      expect(screen.getByText("#d.taste")).toBeTruthy();
+      expect(screen.getByText("Taste profile")).toBeTruthy();
     });
+    expect(screen.getByText("Heard")).toBeTruthy();
+    expect(screen.getByText("Liked")).toBeTruthy();
   });
 });
