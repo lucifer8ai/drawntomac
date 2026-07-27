@@ -38,7 +38,7 @@ export function useDiaryInteractions(userId: string | null, songIds: string[]) {
     } finally {
       setLoading(false);
     }
-  }, [userId, songIds.join(",")]);
+  }, [userId, JSON.stringify(songIds)]);
 
   useEffect(() => {
     fetch();

@@ -30,9 +30,19 @@ export const useTabContext = () => useContext(TabContext);
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/" });
+    if (!location.pathname.startsWith("/onboarding")) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("onboarding_completed")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      if (!profile || !profile.onboarding_completed) {
+        throw redirect({ to: "/onboarding", search: { step: 1 } });
+      }
+    }
     return { user: data.user };
   },
   component: AuthenticatedLayout,

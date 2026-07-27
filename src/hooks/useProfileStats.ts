@@ -6,10 +6,11 @@ export interface ProfileTasteStats {
   liked: number;
   disliked: number;
   want: number;
+  review: number;
 }
 
 export function useProfileStats(userId: string | null) {
-  const [stats, setStats] = useState<ProfileTasteStats>({ heard: 0, liked: 0, disliked: 0, want: 0 });
+  const [stats, setStats] = useState<ProfileTasteStats>({ heard: 0, liked: 0, disliked: 0, want: 0, review: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,8 +31,9 @@ export function useProfileStats(userId: string | null) {
         like: "liked",
         dislike: "disliked",
         want: "want",
+        review: "review",
       };
-      const counts: ProfileTasteStats = { heard: 0, liked: 0, disliked: 0, want: 0 };
+      const counts: ProfileTasteStats = { heard: 0, liked: 0, disliked: 0, want: 0, review: 0 };
       for (const row of data ?? []) {
         const key = DB_TYPE_TO_KEY[row.type];
         if (key) counts[key] = (counts[key] || 0) + 1;
@@ -48,5 +50,5 @@ export function useProfileStats(userId: string | null) {
     fetchStats();
   }, [fetchStats]);
 
-  return { stats, loading, error };
+  return { stats, loading, error, retry: fetchStats };
 }

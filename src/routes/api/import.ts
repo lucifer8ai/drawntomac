@@ -1,14 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import {
-  getRecordingByMbid,
-  type ParsedMusicBrainzResult,
-  isArtistInAllowedArea,
-  ALLOWED_COUNTRIES,
-  ALLOWED_ARTISTS,
-} from "@/lib/musicbrainz";
-import { searchGeniusArtwork } from "@/lib/genius";
-import { generateSlug, slugifyBase } from "@/lib/slugify";
+import { isArtistInAllowedArea } from "@/lib/musicbrainz";
+import { importSong } from "@/lib/song-import";
 
 const bodySchema = z.object({
   mbid: z.string().min(1),
@@ -43,160 +36,18 @@ export const Route = createFileRoute("/api/import")({
         const { supabaseAdmin } =
           await import("@/integrations/supabase/client.server");
 
-        // Check if song already exists
-        const { data: existing } = await supabaseAdmin
-          .from("songs")
-          .select("slug")
-          .eq("musicbrainz_id", body.mbid)
-          .maybeSingle();
+        const result = await importSong(supabaseAdmin, body, {
+          isArtistInAllowedArea,
+        });
 
-        // If song already exists, just refresh artwork (cheap) and redirect
-        if (existing) {
-          const geniusLookupName = body.primaryArtistName || body.artistName;
-          const genius = await searchGeniusArtwork(
-            geniusLookupName,
-            body.title,
+        if (result.status === "skipped") {
+          return Response.json(
+            { error: "This artist is not from an allowed area." },
+            { status: 403 },
           );
-          if (genius.geniusSongId || genius.thumbnailUrl) {
-            await supabaseAdmin
-              .from("songs")
-              .update({
-                genius_thumbnail_url: genius.thumbnailUrl,
-                genius_song_id: genius.geniusSongId,
-              })
-              .eq("musicbrainz_id", body.mbid);
-          }
-          return Response.json({ slug: existing.slug });
         }
 
-        // Parallel: fetch full metadata from MusicBrainz + Genius artwork
-        const geniusLookupName = body.primaryArtistName || body.artistName;
-        const [recording, genius] = await Promise.all([
-          getRecordingByMbid(body.mbid).catch((err) => {
-            console.warn(
-              "[import] getRecordingByMbid failed, proceeding with search data:",
-              (err as Error).message,
-            );
-            return null;
-          }),
-          searchGeniusArtwork(geniusLookupName, body.title),
-        ]);
-
-        const coverUrl = genius.thumbnailUrl;
-        const geniusSongId = genius.geniusSongId;
-        const geniusArtistId = genius.geniusArtistId;
-
-        // Artist area check: if release country not in allowed set, check artist area.
-        // Bypass the check for artists in the explicit allowlist (e.g. artists whose
-        // releases have no country set but are known to be from allowed areas).
-        const releaseCountry = recording?.country ?? null;
-        const artistNameCheck = body.primaryArtistName || body.artistName;
-        if (
-          !releaseCountry ||
-          !ALLOWED_COUNTRIES.includes(releaseCountry.toUpperCase())
-        ) {
-          const isAllowedArtist = ALLOWED_ARTISTS.some(
-            (a) => artistNameCheck.toLowerCase() === a.toLowerCase(),
-          );
-          if (!isAllowedArtist && body.artistMbid) {
-            const allowed = await isArtistInAllowedArea(body.artistMbid);
-            if (!allowed) {
-              return Response.json(
-                { error: "This artist is not from an allowed area." },
-                { status: 403 },
-              );
-            }
-          }
-        }
-
-        // Determine artist slug + id
-        const artistSlug =
-          slugifyBase(body.artistName).slice(0, 80) || body.mbid;
-        const { data: artist, error: artistErr } = await supabaseAdmin
-          .from("artists")
-          .upsert(
-            {
-              name: body.artistName,
-              slug: artistSlug,
-              musicbrainz_id: body.artistMbid ?? null,
-              genius_artist_id: geniusArtistId,
-              image_url: genius.artistImageUrl,
-            },
-            { onConflict: "musicbrainz_id" },
-          )
-          .select("id")
-          .single();
-
-        if (artistErr && artistErr.code !== "23505") {
-          console.error("[import] artist upsert", artistErr);
-          return Response.json({ error: artistErr.message }, { status: 500 });
-        }
-
-        // If upsert returned empty due to conflict, re-fetch
-        let artistId = artist?.id ?? null;
-        if (!artistId && body.artistMbid) {
-          const { data: refetched } = await supabaseAdmin
-            .from("artists")
-            .select("id")
-            .eq("musicbrainz_id", body.artistMbid)
-            .single();
-          artistId = refetched?.id ?? null;
-        }
-
-        // Generate slug
-        const slug = generateSlug(body.title);
-        const releaseGroupMbid =
-          recording?.releaseGroupMbid ?? body.releaseGroupMbid ?? null;
-        const releaseDate = recording?.releaseDate ?? body.releaseDate ?? null;
-        const tags = recording?.tags ?? [];
-
-        // Upsert release group if mbid is present
-        let releaseGroupId: string | null = null;
-        if (releaseGroupMbid) {
-          const rgTitle = body.releaseGroupTitle || body.title;
-          const releaseGroupSlug = generateSlug(rgTitle);
-          // release_groups is a new table — not yet in generated Supabase types
-          const { data: rg } = await (supabaseAdmin.from as any)("release_groups")
-            .upsert(
-              {
-                musicbrainz_id: releaseGroupMbid,
-                title: rgTitle,
-                slug: releaseGroupSlug,
-                artist_id: artistId,
-                image_url: coverUrl,
-                release_date: recording?.releaseDate ?? body.releaseDate ?? null,
-              },
-              { onConflict: "musicbrainz_id" },
-            )
-            .select("id")
-            .single();
-          releaseGroupId = rg?.id ?? null;
-        }
-
-        const songRow = {
-          title: body.title,
-          slug,
-          musicbrainz_id: body.mbid,
-          artist_id: artistId,
-          genius_thumbnail_url: coverUrl,
-          genius_song_id: geniusSongId,
-          genre_tags: tags,
-          credits: null,
-          release_group_mbid: releaseGroupMbid,
-          release_group_id: releaseGroupId,
-          country: releaseCountry,
-          release_date: releaseDate,
-        };
-
-        const { error: songErr } = await (supabaseAdmin.from as any)("songs")
-          .upsert(songRow, { onConflict: "musicbrainz_id" });
-
-        if (songErr) {
-          console.error("[import] song upsert", songErr);
-          return Response.json({ error: songErr.message }, { status: 500 });
-        }
-
-        return Response.json({ slug });
+        return Response.json({ slug: result.slug });
       },
     },
   },

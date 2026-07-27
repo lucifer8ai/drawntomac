@@ -265,6 +265,8 @@ export type Database = {
           display_name_visible: boolean
           id: string
           location_id: string | null
+          onboarding_completed: boolean
+          onboarding_step: number
           pronouns: string | null
           updated_at: string
           username: string
@@ -280,6 +282,8 @@ export type Database = {
           display_name_visible?: boolean
           id: string
           location_id?: string | null
+          onboarding_completed?: boolean
+          onboarding_step?: number
           pronouns?: string | null
           updated_at?: string
           username: string
@@ -295,6 +299,8 @@ export type Database = {
           display_name_visible?: boolean
           id?: string
           location_id?: string | null
+          onboarding_completed?: boolean
+          onboarding_step?: number
           pronouns?: string | null
           updated_at?: string
           username?: string
@@ -479,11 +485,16 @@ export type Database = {
       get_for_you_songs: {
         Args: { user_id: string }
         Returns: {
+          album_art_url: string | null
+          artist_name: string | null
           dislike_count: number
+          genre_tags: string[] | null
           heard_count: number
           like_count: number
           review_count: number
+          slug: string
           song_id: string
+          title: string
           trending_score: number
         }[]
       }
@@ -527,11 +538,16 @@ export type Database = {
       get_trending_songs: {
         Args: { window_days?: number }
         Returns: {
+          album_art_url: string | null
+          artist_name: string | null
           dislike_count: number
+          genre_tags: string[] | null
           heard_count: number
           like_count: number
           review_count: number
+          slug: string
           song_id: string
+          title: string
           trending_score: number
         }[]
       }
@@ -561,6 +577,15 @@ export type Database = {
           type: string
           user_id: string
           username: string
+        }[]
+      }
+      get_onboarding_artists: {
+        Args: Record<string, never>
+        Returns: {
+          id: string
+          image_url: string | null
+          name: string
+          song_count: number
         }[]
       }
     }

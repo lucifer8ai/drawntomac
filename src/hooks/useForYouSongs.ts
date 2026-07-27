@@ -28,59 +28,38 @@ export function useForYouSongs(userId: string | null) {
           setLoading(false);
           return;
         }
-        const songIds = trending.map((t) => t.song_id);
-        const { data: songData } = await supabase
-          .from("songs")
-          .select("id, title, slug, genius_thumbnail_url, genre_tags, artist:artists(name)")
-          .in("id", songIds);
-        const songMap = new Map((songData ?? []).map((s: any) => [s.id, s]));
         setSongs(
-          trending.map((t) => {
-            const s = songMap.get(t.song_id);
-            return {
-              id: t.song_id,
-              title: s?.title ?? "Unknown",
-              slug: s?.slug ?? "",
-              artistName: s?.artist?.name ?? null,
-              albumArtUrl: s?.genius_thumbnail_url ?? null,
-              genreTags: s?.genre_tags ?? null,
-              likeCount: t.like_count,
-              heardCount: t.heard_count,
-              reviewCount: t.review_count,
-              dislikeCount: t.dislike_count,
-              trendingScore: t.trending_score,
-            };
-          }),
+          trending.map((t) => ({
+            id: t.song_id,
+            title: t.title ?? "Unknown",
+            slug: t.slug ?? "",
+            artistName: t.artist_name ?? null,
+            albumArtUrl: t.album_art_url ?? null,
+            genreTags: t.genre_tags ?? null,
+            likeCount: t.like_count,
+            heardCount: t.heard_count,
+            reviewCount: t.review_count,
+            dislikeCount: t.dislike_count,
+            trendingScore: t.trending_score,
+          })),
         );
         setLoading(false);
         return;
       }
 
-      const songIds = forYou.map((t) => t.song_id);
-      const { data: songData, error: songsError } = await supabase
-        .from("songs")
-        .select("id, title, slug, genius_thumbnail_url, genre_tags, artist:artists(name)")
-        .in("id", songIds);
-
-      if (songsError) throw songsError;
-
-      const songMap = new Map((songData ?? []).map((s: any) => [s.id, s]));
-      const mapped: TrendingSong[] = forYou.map((t) => {
-        const s = songMap.get(t.song_id);
-        return {
-          id: t.song_id,
-          title: s?.title ?? "Unknown",
-          slug: s?.slug ?? "",
-          artistName: s?.artist?.name ?? null,
-          albumArtUrl: s?.genius_thumbnail_url ?? null,
-          genreTags: s?.genre_tags ?? null,
-          likeCount: t.like_count,
-          heardCount: t.heard_count,
-          reviewCount: t.review_count,
-          dislikeCount: t.dislike_count,
-          trendingScore: t.trending_score,
-        };
-      });
+      const mapped: TrendingSong[] = forYou.map((t) => ({
+        id: t.song_id,
+        title: t.title ?? "Unknown",
+        slug: t.slug ?? "",
+        artistName: t.artist_name ?? null,
+        albumArtUrl: t.album_art_url ?? null,
+        genreTags: t.genre_tags ?? null,
+        likeCount: t.like_count,
+        heardCount: t.heard_count,
+        reviewCount: t.review_count,
+        dislikeCount: t.dislike_count,
+        trendingScore: t.trending_score,
+      }));
 
       setSongs(mapped);
     } catch (e: any) {

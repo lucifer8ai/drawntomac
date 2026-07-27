@@ -211,9 +211,14 @@ async function getSupabaseAdmin() {
  * Check if an artist is from an allowed country.
  * Checks DB artist_countries cache first; on miss, fetches from MusicBrainz
  * /artist/{mbid} and checks artist.country AND artist.area.iso-3166-1-codes.
+ *
+ * @param defaultAllow — what to return on network/API failure.
+ *   true (default): fail-open for user imports (don't block real users).
+ *   false: fail-closed for seed scripts (unverified = skip).
  */
 export async function isArtistInAllowedArea(
   artistMbid: string | null,
+  defaultAllow = true,
 ): Promise<boolean> {
   if (!artistMbid) return false;
 
@@ -237,7 +242,7 @@ export async function isArtistInAllowedArea(
     const res = await musicbrainzFetch(
       `/artist/${encodeURIComponent(artistMbid)}?fmt=json&inc=area`,
     );
-    if (!res.ok) return false;
+    if (!res.ok) return defaultAllow;
     const artist = (await res.json()) as MusicBrainzArtist;
 
     const countries: string[] = [];
@@ -265,10 +270,7 @@ export async function isArtistInAllowedArea(
 
     return countries.some((c) => ALLOWED_COUNTRIES.includes(c.toUpperCase()));
   } catch {
-    // Fail open: if we can't verify the artist's area (network error, rate limit),
-    // don't block the import. Search is already broad — better to show the song
-    // than silently block legitimate artists.
-    return true;
+    return defaultAllow;
   }
 }
 

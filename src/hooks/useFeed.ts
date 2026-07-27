@@ -154,7 +154,7 @@ export function useFeed() {
           const { data } = await supabase
             .from("diary_entries")
             .select(`id, type, body, created_at, user_id, song_id,
-              song:songs ( id, title, slug, genius_thumbnail_url, artist:artists ( name ) )
+              song:songs ( id, title, slug, genius_thumbnail_url, artist:artists!songs_artist_id_fkey ( name ) )
             `)
             .eq("id", payload.new.id)
             .single();
