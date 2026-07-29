@@ -1,1 +1,0 @@
-import{r as e}from"./useRouter-FiGDFqj1.js";import{t}from"./song._slug-CK7L7dCV.js";var n=e(),r=({error:e})=>(0,n.jsx)(t,{children:(0,n.jsxs)(`div`,{className:`mx-auto max-w-2xl p-8 text-center text-white/70`,children:[`Couldn't load this song. `,e.message]})});export{r as errorComponent};
