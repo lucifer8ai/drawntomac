@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { BannerUpload } from "./BannerUpload";
 import { AvatarUpload } from "./AvatarUpload";
 import { LocationPicker } from "./LocationPicker";
+import { ImageCropper } from "@/components/onboarding/ImageCropper";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -31,8 +32,8 @@ interface EditFormProps {
     banner_url?: string | null;
     display_name_visible?: boolean;
   }) => Promise<void>;
-  onUploadAvatar: (file: File) => Promise<string>;
-  onUploadBanner: (file: File) => Promise<string>;
+  onUploadAvatar: (file: File | Blob) => Promise<string>;
+  onUploadBanner: (file: File | Blob) => Promise<string>;
   onCancel: () => void;
   saving: boolean;
 }
@@ -55,6 +56,12 @@ export function ProfileEditForm({
   const [avatarUrl, setAvatarUrl] = useState(initial.avatar_url);
   const [bannerUrl, setBannerUrl] = useState(initial.banner_url);
 
+  const [showCrop, setShowCrop] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [cropAspect, setCropAspect] = useState(1);
+  const [cropShape, setCropShape] = useState<"round" | "rect">("round");
+  const [pendingCropAction, setPendingCropAction] = useState<((blob?: Blob) => Promise<void>) | null>(null);
+
   async function handleSave() {
     await onSave({
       display_name: displayName.trim() || null,
@@ -67,31 +74,54 @@ export function ProfileEditForm({
     });
   }
 
-  async function handleBannerUpload(file: File) {
-    try {
-      const url = await onUploadBanner(file);
-      setBannerUrl(url);
-      toast.success("Banner updated");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Failed to upload banner");
-    }
+  async function handleBannerSelect(file: File) {
+    setCropImageSrc(URL.createObjectURL(file));
+    setCropAspect(3);
+    setCropShape("rect");
+    setPendingCropAction(() => async (croppedBlob?: Blob) => {
+      try {
+        const blobToUpload = croppedBlob ?? file;
+        if (blobToUpload.size > 5 * 1024 * 1024) {
+          toast.error("File too large. Max 5MB.");
+          return;
+        }
+        const url = await onUploadBanner(blobToUpload);
+        setBannerUrl(url);
+        toast.success("Banner updated");
+      } catch (e: any) {
+        toast.error(e?.message ?? "Failed to upload banner");
+      }
+    });
+    setShowCrop(true);
   }
 
-  async function handleAvatarUpload(file: File) {
-    try {
-      const url = await onUploadAvatar(file);
-      setAvatarUrl(url);
-      toast.success("Avatar updated");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Failed to upload avatar");
-    }
+  async function handleAvatarSelect(file: File) {
+    setCropImageSrc(URL.createObjectURL(file));
+    setCropAspect(1);
+    setCropShape("round");
+    setPendingCropAction(() => async (croppedBlob?: Blob) => {
+      try {
+        const blobToUpload = croppedBlob ?? file;
+        if (blobToUpload.size > 5 * 1024 * 1024) {
+          toast.error("File too large. Max 5MB.");
+          return;
+        }
+        const url = await onUploadAvatar(blobToUpload);
+        setAvatarUrl(url);
+        toast.success("Avatar updated");
+      } catch (e: any) {
+        toast.error(e?.message ?? "Failed to upload avatar");
+      }
+    });
+    setShowCrop(true);
   }
 
   return (
-    <div className="flex flex-col gap-5 pt-4">
+    <>
+      <div className="flex flex-col gap-5 pt-4">
       <BannerUpload
         bannerUrl={bannerUrl}
-        onUpload={handleBannerUpload}
+        onUpload={handleBannerSelect}
         disabled={saving}
         onRemove={async () => {
           try {
@@ -114,7 +144,7 @@ export function ProfileEditForm({
       <div className="px-4 -mt-12">
         <AvatarUpload
           avatarUrl={avatarUrl}
-          onUpload={handleAvatarUpload}
+          onUpload={handleAvatarSelect}
           disabled={saving}
           displayName={displayName || initial.username}
           onRemove={async () => {
@@ -208,5 +238,25 @@ export function ProfileEditForm({
         </Button>
       </div>
     </div>
+
+    {showCrop && cropImageSrc && (
+      <ImageCropper
+        open={showCrop}
+        imageSrc={cropImageSrc}
+        aspect={cropAspect}
+        cropShape={cropShape}
+        onCropComplete={async (blob) => {
+          setShowCrop(false);
+          URL.revokeObjectURL(cropImageSrc);
+          await pendingCropAction?.(blob);
+        }}
+        onCancel={async () => {
+          setShowCrop(false);
+          URL.revokeObjectURL(cropImageSrc);
+          await pendingCropAction?.();
+        }}
+      />
+    )}
+  </>
   );
 }

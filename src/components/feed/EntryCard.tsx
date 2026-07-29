@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { TypeDot } from "./TypeDot";
+import { ArtistLink } from "@/components/artist";
+import { slugifyBase } from "@/lib/slugify";
 
 export interface EntryCardData {
   entryId: string;
@@ -86,8 +88,8 @@ export function EntryCard({ data }: { data: EntryCardData }) {
             {data.songTitle}
           </div>
           {data.artistName && (
-            <div className="text-xs text-muted-foreground truncate" title={data.artistName}>
-              {data.artistName}
+            <div className="text-xs text-muted-foreground truncate" title={data.artistName} onClick={(e) => e.stopPropagation()}>
+              <ArtistLink name={data.artistName} slug={slugifyBase(data.artistName).slice(0, 80)} className="text-muted-foreground" />
             </div>
           )}
           {data.reviewBody ? (

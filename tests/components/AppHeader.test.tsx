@@ -30,7 +30,7 @@ describe("AppHeader", () => {
 
   it("header nav tabs are hidden on mobile", () => {
     render(<AppHeader activeTab="feed" onTabChange={() => {}} onProfileClick={() => {}} />);
-    const nav = screen.getByText("Feed", { selector: "nav button" });
+    const nav = screen.getByText("#d.Yours", { selector: "nav button" });
     const navEl = nav.closest("nav")!;
     expect(navEl.className).toContain("hidden");
     expect(navEl.className).toContain("md:flex");

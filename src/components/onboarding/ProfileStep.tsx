@@ -2,12 +2,15 @@ import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Camera, Image } from "lucide-react";
 import { toast } from "sonner";
+import { ImageCropper } from "./ImageCropper";
 
 interface ProfileStepProps {
   onComplete: () => void;
 }
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,30}$/;
+
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export function ProfileStep({ onComplete }: ProfileStepProps) {
   const [username, setUsername] = useState("");
@@ -17,6 +20,13 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
   const [bannerUploading, setBannerUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
+
+  const [showCrop, setShowCrop] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [cropAspect, setCropAspect] = useState<number>(1);
+  const [cropShape, setCropShape] = useState<"round" | "rect">("round");
+  const [pendingCropAction, setPendingCropAction] = useState<((blob?: Blob) => Promise<void>) | null>(null);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -41,6 +51,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
 
   async function checkUsernameAvailable(val: string) {
     if (!USERNAME_RE.test(val)) return;
+    setIsChecking(true);
     const { data } = await supabase
       .from("profiles")
       .select("id")
@@ -49,9 +60,14 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
     if (data) {
       setUsernameError("Username already taken.");
     }
+    setIsChecking(false);
   }
 
-  async function uploadFile(bucket: "avatars" | "banners", file: File): Promise<string> {
+  async function uploadFile(bucket: "avatars" | "banners", fileOrBlob: File | Blob): Promise<string> {
+    const file = fileOrBlob instanceof File
+      ? fileOrBlob
+      : new File([fileOrBlob], "cropped.jpg", { type: fileOrBlob.type || "image/jpeg" });
+
     const { data: session } = await supabase.auth.getSession();
     const token = session?.session?.access_token;
     if (!token) throw new Error("Not authenticated");
@@ -79,38 +95,62 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
     return url;
   }
 
-  async function handleAvatarUpload(file: File) {
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("File too large. Max 5MB.");
+  function handleAvatarSelect(file: File) {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      toast.error("Please use JPEG, PNG, or WebP images.");
       return;
     }
-    setAvatarUploading(true);
-    try {
-      const url = await uploadFile("avatars", file);
-      setAvatarUrl(url);
-      toast.success("Profile picture updated");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Failed to upload avatar");
-    } finally {
-      setAvatarUploading(false);
-    }
+    setCropImageSrc(URL.createObjectURL(file));
+    setCropAspect(1);
+    setCropShape("round");
+    setPendingCropAction(() => async (croppedBlob?: Blob) => {
+      setAvatarUploading(true);
+      try {
+        const blobToUpload = croppedBlob ?? file;
+        if (blobToUpload.size > 5 * 1024 * 1024) {
+          toast.error("File too large. Max 5MB.");
+          setAvatarUploading(false);
+          return;
+        }
+        const url = await uploadFile("avatars", blobToUpload);
+        setAvatarUrl(url);
+        toast.success("Profile picture updated");
+      } catch (e: any) {
+        toast.error(e?.message ?? "Failed to upload avatar");
+      } finally {
+        setAvatarUploading(false);
+      }
+    });
+    setShowCrop(true);
   }
 
-  async function handleBannerUpload(file: File) {
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("File too large. Max 5MB.");
+  function handleBannerSelect(file: File) {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      toast.error("Please use JPEG, PNG, or WebP images.");
       return;
     }
-    setBannerUploading(true);
-    try {
-      const url = await uploadFile("banners", file);
-      setBannerUrl(url);
-      toast.success("Banner updated");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Failed to upload banner");
-    } finally {
-      setBannerUploading(false);
-    }
+    setCropImageSrc(URL.createObjectURL(file));
+    setCropAspect(3);
+    setCropShape("rect");
+    setPendingCropAction(() => async (croppedBlob?: Blob) => {
+      setBannerUploading(true);
+      try {
+        const blobToUpload = croppedBlob ?? file;
+        if (blobToUpload.size > 5 * 1024 * 1024) {
+          toast.error("File too large. Max 5MB.");
+          setBannerUploading(false);
+          return;
+        }
+        const url = await uploadFile("banners", blobToUpload);
+        setBannerUrl(url);
+        toast.success("Banner updated");
+      } catch (e: any) {
+        toast.error(e?.message ?? "Failed to upload banner");
+      } finally {
+        setBannerUploading(false);
+      }
+    });
+    setShowCrop(true);
   }
 
   async function handleContinue() {
@@ -126,7 +166,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
           username,
           avatar_url: avatarUrl,
           banner_url: bannerUrl,
-          onboarding_step: 3,
+          onboarding_step: 2,
         })
         .eq("id", user.id);
 
@@ -141,13 +181,13 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
   const canContinue = USERNAME_RE.test(username) && !usernameError && !disabled;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 rounded-2xl border border-border/50 bg-raised/50 p-6 backdrop-blur-sm">
       <div className="space-y-2">
         <h2 className="text-[28px] font-bold text-foreground" style={{ fontFamily: "DM Sans, sans-serif" }}>
-          Set up your profile
+          Make it yours
         </h2>
         <p className="text-base text-muted-foreground">
-          This is how others will see you.
+          Pick a username and a look. Keep it real — or don't.
         </p>
       </div>
 
@@ -156,7 +196,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
         <div
           role="button"
           tabIndex={0}
-          aria-label="Upload banner"
+          aria-label={bannerUploading ? "Uploading banner..." : bannerUrl ? "Change banner" : "Upload banner"}
           onClick={() => !disabled && bannerInputRef.current?.click()}
           onKeyDown={(e) => {
             if ((e.key === " " || e.key === "Enter") && !disabled) {
@@ -164,7 +204,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
               bannerInputRef.current?.click();
             }
           }}
-          className={`relative w-full h-[120px] rounded-lg border overflow-hidden cursor-pointer transition-colors ${
+          className={`relative w-full aspect-[3/1] rounded-lg border overflow-hidden cursor-pointer transition-colors ${
             bannerUrl ? "border-border" : "border-border border-dashed"
           } ${disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-white/5"}`}
         >
@@ -188,13 +228,13 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
           <input
             ref={bannerInputRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             className="hidden"
             disabled={disabled}
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) {
-                handleBannerUpload(file);
+                handleBannerSelect(file);
                 e.target.value = "";
               }
             }}
@@ -207,7 +247,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
         <div
           role="button"
           tabIndex={0}
-          aria-label="Upload profile picture"
+          aria-label={avatarUploading ? "Uploading profile picture..." : avatarUrl ? "Change profile picture" : "Upload profile picture"}
           onClick={() => !disabled && avatarInputRef.current?.click()}
           onKeyDown={(e) => {
             if ((e.key === " " || e.key === "Enter") && !disabled) {
@@ -238,13 +278,13 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
           <input
             ref={avatarInputRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             className="hidden"
             disabled={disabled}
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) {
-                handleAvatarUpload(file);
+                handleAvatarSelect(file);
                 e.target.value = "";
               }
             }}
@@ -273,6 +313,8 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
         />
         {usernameError ? (
           <p className="text-[13px] text-destructive" role="alert">{usernameError}</p>
+        ) : isChecking ? (
+          <p className="text-[13px] text-muted-foreground animate-pulse">Checking availability…</p>
         ) : (
           <p className="text-[13px] text-muted-foreground">
             3-30 characters, letters, numbers, and underscores.
@@ -294,6 +336,25 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
       >
         {saving ? "Saving…" : "Continue"}
       </button>
+
+      {showCrop && cropImageSrc && (
+        <ImageCropper
+          open={showCrop}
+          imageSrc={cropImageSrc}
+          aspect={cropAspect}
+          cropShape={cropShape}
+          onCropComplete={async (blob) => {
+            setShowCrop(false);
+            URL.revokeObjectURL(cropImageSrc);
+            await pendingCropAction?.(blob);
+          }}
+          onCancel={async () => {
+            setShowCrop(false);
+            URL.revokeObjectURL(cropImageSrc);
+            await pendingCropAction?.();
+          }}
+        />
+      )}
     </div>
   );
 }

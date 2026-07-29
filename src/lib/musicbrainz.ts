@@ -56,6 +56,7 @@ export interface ParsedMusicBrainzResult {
   artistName: string;
   primaryArtistName: string;
   artistMbid: string | null;
+  artistCredits: MusicBrainzArtistCredit[];
   releaseGroupMbid: string | null;
   releaseGroupTitle: string | null;
   releaseDate: string | null;
@@ -63,23 +64,23 @@ export interface ParsedMusicBrainzResult {
   tags: string[];
 }
 
-function parseArtist(recording: MusicBrainzRecording): {
-  name: string;
-  primaryName: string;
-  mbid: string | null;
+export function parseArtistCredits(recording: MusicBrainzRecording): {
+  displayName: string;
+  primaryArtist: { name: string; mbid: string | null };
+  artistCredits: MusicBrainzArtistCredit[];
 } {
   const credits = recording["artist-credit"];
   if (!credits || credits.length === 0)
-    return { name: "Unknown", primaryName: "Unknown", mbid: null };
-  const name = credits
+    return { displayName: "Unknown", primaryArtist: { name: "Unknown", mbid: null }, artistCredits: [] };
+  const displayName = credits
     .map((c) => c.artist.name + (c.joinphrase ?? ""))
     .join("")
     .trim();
   const primary = credits[0].artist;
   return {
-    name: name || primary.name,
-    primaryName: primary.name,
-    mbid: primary.id ?? null,
+    displayName: displayName || primary.name,
+    primaryArtist: { name: primary.name, mbid: primary.id ?? null },
+    artistCredits: credits,
   };
 }
 
@@ -160,7 +161,7 @@ export function pickBestRelease(
 export function parseRecording(
   recording: MusicBrainzRecording,
 ): ParsedMusicBrainzResult {
-  const artist = parseArtist(recording);
+  const artist = parseArtistCredits(recording);
   const releases = recording.releases ?? [];
   const best = pickBestRelease(releases);
   const rg = best?.["release-group"];
@@ -169,9 +170,10 @@ export function parseRecording(
   return {
     mbid: recording.id,
     title: recording.title,
-    artistName: artist.name,
-    primaryArtistName: artist.primaryName,
-    artistMbid: artist.mbid,
+    artistName: artist.displayName,
+    primaryArtistName: artist.primaryArtist.name,
+    artistMbid: artist.primaryArtist.mbid,
+    artistCredits: artist.artistCredits,
     releaseGroupMbid: rg?.id ?? null,
     releaseGroupTitle: rg?.title ?? null,
     releaseDate: normalizeDate(best?.date ?? null),

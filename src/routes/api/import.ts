@@ -12,6 +12,10 @@ const bodySchema = z.object({
   releaseGroupMbid: z.string().nullable().optional(),
   releaseGroupTitle: z.string().nullable().optional(),
   releaseDate: z.string().nullable().optional(),
+  artistCredits: z.array(z.object({
+    artist: z.object({ id: z.string().nullable(), name: z.string() }),
+    joinphrase: z.string().optional(),
+  })).optional(),
 });
 
 export const Route = createFileRoute("/api/import")({
@@ -36,7 +40,7 @@ export const Route = createFileRoute("/api/import")({
         const { supabaseAdmin } =
           await import("@/integrations/supabase/client.server");
 
-        const result = await importSong(supabaseAdmin, body, {
+        const result = await importSong(supabaseAdmin, body as any, {
           isArtistInAllowedArea,
         });
 

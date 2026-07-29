@@ -2,18 +2,17 @@ import { useState, useCallback } from "react";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { ArtistSelector } from "@/components/onboarding/ArtistSelector";
-import { SongTagger } from "@/components/onboarding/SongTagger";
 import { ProfileStep } from "@/components/onboarding/ProfileStep";
 import { CityStep } from "@/components/onboarding/CityStep";
 import { CompletionScreen } from "@/components/onboarding/CompletionScreen";
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3;
 
 interface OnboardingSearch {
   step?: number;
 }
 
-export const Route = createFileRoute("/_authenticated/onboarding")({
+export const Route = createFileRoute("/onboarding")({
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getUser();
@@ -27,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
   },
   validateSearch: (search: Record<string, unknown>): OnboardingSearch => {
     const step = typeof search.step === "number" ? search.step : Number(search.step);
-    return { step: step >= 1 && step <= 4 ? step : 1 };
+    return { step: step >= 1 && step <= 3 ? step : 1 };
   },
   component: OnboardingPage,
 });
@@ -45,8 +44,6 @@ function OnboardingPage() {
       return [];
     }
   });
-  const [heardCount, setHeardCount] = useState(0);
-  const [songCount, setSongCount] = useState(0);
 
   const goTo = useCallback(
     (s: number) => {
@@ -61,33 +58,53 @@ function OnboardingPage() {
     goTo(2);
   }, [goTo]);
 
-  const handleSongsConfirm = useCallback(() => {
-    goTo(3);
-  }, [goTo]);
-
   const handleProfileComplete = useCallback(() => {
-    goTo(4);
+    goTo(3);
   }, [goTo]);
 
   const handleCityComplete = useCallback(() => {
     setShowComplete(true);
   }, []);
 
-  if (showComplete) {
-    return (
+  const backgroundLayers = (
+    <>
       <div
-        className="min-h-screen flex flex-col items-center justify-center px-4 relative"
+        className="pointer-events-none absolute inset-0 z-0"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E")`,
+          backgroundRepeat: "repeat",
+          backgroundSize: "128px 128px",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0 z-0"
+        style={{
+          background: "radial-gradient(ellipse at 50% 40%, transparent 25%, oklch(0.04 0.002 280 / 0.85) 100%)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0 z-0"
         style={{
           backgroundImage: `url('/pictures/onboarding-bg.png')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
+          opacity: 0.25,
         }}
-      >
-        <div className="absolute inset-0 bg-background/85 z-0" />
-        <div className="w-full max-w-md relative z-10">
+      />
+      <div
+        className="pointer-events-none absolute top-0 left-0 right-0 z-0 h-[2px]"
+        style={{ backgroundColor: "oklch(0.85 0 0 / 0.35)" }}
+      />
+    </>
+  );
+
+  if (showComplete) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 relative">
+        {backgroundLayers}
+        <div className="w-full max-w-md relative z-10 animate-fade-in-up">
           <CompletionScreen
             artistCount={selectedArtists.length}
-            songCount={songCount}
           />
         </div>
       </div>
@@ -95,30 +112,22 @@ function OnboardingPage() {
   }
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-start px-4 pt-12 pb-8 relative"
-      style={{
-        backgroundImage: `url('/pictures/onboarding-bg.png')`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      {/* Dark overlay for readability */}
-      <div className="absolute inset-0 bg-background/85 z-0" />
+    <div className="min-h-screen flex flex-col items-center justify-start px-4 pt-12 pb-8 relative">
+      {backgroundLayers}
       <div className="w-full max-w-md space-y-8 relative z-10">
-        {/* Step dots */}
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-extrabold tracking-tight" style={{ fontFamily: "DM Sans, sans-serif", color: "oklch(0.85 0 0)" }}>
-            #d.To
-          </h1>
-          <div className="flex items-center gap-2">
-            {([1, 2, 3, 4] as const).map((s) => (
+          <p className="text-sm text-muted-foreground">Step {step} of 3</p>
+          <div className="flex items-center gap-1.5">
+            {([1, 2, 3] as const).map((s) => (
               <div
                 key={s}
                 role="tab"
                 aria-current={s === step ? "step" : undefined}
-                className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                  s === step ? "bg-foreground" : "bg-foreground/20"
+                aria-label={`Step ${s} of 3${s === step ? ", current" : ""}`}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  s === step
+                    ? "bg-primary w-6 animate-pulse"
+                    : "bg-foreground/20 w-2"
                 }`}
               />
             ))}
@@ -126,29 +135,26 @@ function OnboardingPage() {
         </div>
 
         {step === 1 && (
-          <ArtistSelector
-            selectedArtistIds={selectedArtists}
-            onConfirm={handleArtistConfirm}
-          />
+          <div key="step-1" className="animate-fade-in-up">
+            <ArtistSelector
+              selectedArtistIds={selectedArtists}
+              max={3}
+              requireExact={true}
+              onConfirm={handleArtistConfirm}
+            />
+          </div>
         )}
 
         {step === 2 && (
-          <SongTagger
-            artistIds={selectedArtists}
-            onConfirm={handleSongsConfirm}
-            onCountsChange={(heard, total) => {
-              setHeardCount(heard);
-              setSongCount(total);
-            }}
-          />
+          <div key="step-2" className="animate-fade-in-up">
+            <ProfileStep onComplete={handleProfileComplete} />
+          </div>
         )}
 
         {step === 3 && (
-          <ProfileStep onComplete={handleProfileComplete} />
-        )}
-
-        {step === 4 && (
-          <CityStep onComplete={handleCityComplete} />
+          <div key="step-3" className="animate-fade-in-up">
+            <CityStep onComplete={handleCityComplete} selectedArtists={selectedArtists} />
+          </div>
         )}
       </div>
     </div>

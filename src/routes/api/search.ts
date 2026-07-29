@@ -13,6 +13,7 @@ export interface SearchHit {
   subtitle: string;
   slug: string | null;
   thumbnailUrl: string | null;
+  songCount?: number;
   // Song-specific fields (used by /api/import)
   artistName?: string;
   primaryArtistName?: string;
@@ -36,6 +37,7 @@ interface DBArtistHit {
   slug: string;
   image_url: string | null;
   musicbrainz_id: string | null;
+  song_count: number;
 }
 
 interface DBAlbumHit {
@@ -85,9 +87,10 @@ function toArtistHit(r: DBArtistHit): SearchHit {
     category: "artist",
     mbid: r.musicbrainz_id ?? r.artist_id,
     title: r.name,
-    subtitle: "",
+    subtitle: `${r.song_count} songs`,
     slug: r.slug,
     thumbnailUrl: r.image_url,
+    songCount: r.song_count,
   };
 }
 
@@ -103,8 +106,29 @@ function toAlbumHit(r: DBAlbumHit): SearchHit {
   };
 }
 
+interface CachedResult {
+  json: string;
+  status: number;
+  headers: Record<string, string>;
+}
+
+function jsonResult(body: unknown, status = 200): CachedResult {
+  return {
+    json: JSON.stringify(body),
+    status,
+    headers: { "content-type": "application/json" },
+  };
+}
+
+function materializeResponse(cache: CachedResult): Response {
+  return new Response(cache.json, {
+    status: cache.status,
+    headers: cache.headers,
+  });
+}
+
 // In-flight request dedup: cache promises keyed by q+artist
-const pendingRequests = new Map<string, Promise<Response>>();
+const pendingRequests = new Map<string, Promise<CachedResult>>();
 
 export const Route = createFileRoute("/api/search")({
   server: {
@@ -126,12 +150,12 @@ export const Route = createFileRoute("/api/search")({
 
         const cacheKey = `${q}|${artist ?? ""}|${language ?? ""}|${era ?? ""}`;
         const pending = pendingRequests.get(cacheKey);
-        if (pending) return pending;
+        if (pending) return materializeResponse(await pending);
 
         const promise = doSearch(q, artist, language, era);
         pendingRequests.set(cacheKey, promise);
         try {
-          return await promise;
+          return materializeResponse(await promise);
         } finally {
           pendingRequests.delete(cacheKey);
         }
@@ -145,7 +169,7 @@ async function doSearch(
   artist?: string,
   language?: string,
   era?: string,
-): Promise<Response> {
+): Promise<CachedResult> {
   const start = Date.now();
 
   const controller = new AbortController();
@@ -168,27 +192,43 @@ async function doSearch(
     if (artistsRes.status === "rejected") console.error("[search] local artists RPC failed", artistsRes.reason);
     if (albumsRes.status === "rejected") console.error("[search] local albums RPC failed", albumsRes.reason);
 
-    // 2. MusicBrainz song search (if local songs < 8)
+    // 2. MusicBrainz + Genius artwork: parallel external calls (if local songs < 8)
     let mbSongs: SearchHit[] = [];
     if (localSongs.length < 8) {
-      const { results, error } = await searchRecordings(
-        q,
-        Math.max(8 - localSongs.length, 3),
-        "artists+tags+releases+genres",
-        artist,
-      );
+      const [mbResult, geniusResult] = await Promise.allSettled([
+        searchRecordings(
+          q,
+          Math.max(8 - localSongs.length, 3),
+          "artists+tags+releases+genres",
+          artist,
+        ),
+        searchGeniusForArtwork(q),
+      ]);
 
-      if (error) {
-        console.error("[search] MusicBrainz error:", error);
-        if (localSongs.length === 0 && localArtists.length === 0 && localAlbums.length === 0) {
-          clearTimeout(timeout);
-          return Response.json(
-            { error: "Search temporarily unavailable" },
-            { status: 429 },
-          );
+      if (mbResult.status === "fulfilled" && !mbResult.value.error) {
+        mbSongs = mbResult.value.results.map(toHit);
+      } else if (mbResult.status === "rejected") {
+        console.error("[search] MusicBrainz error:", mbResult.reason);
+      }
+
+      // Genius is artwork-only: attach thumbnails to MB results that lack images
+      if (geniusResult.status === "fulfilled") {
+        const geniusMap = geniusResult.value; // Map<title|artist, thumbnailUrl>
+        for (const hit of mbSongs) {
+          if (!hit.thumbnailUrl) {
+            const key = `${hit.title}|${hit.subtitle}`.toLowerCase();
+            const thumb = geniusMap.get(key);
+            if (thumb) hit.thumbnailUrl = thumb;
+          }
         }
-      } else {
-        mbSongs = results.map(toHit);
+      } else if (geniusResult.status === "rejected") {
+        console.error("[search] Genius error:", geniusResult.reason);
+      }
+
+      // If MB fails and we have nothing local, return 429
+      if (mbSongs.length === 0 && localSongs.length === 0 && localArtists.length === 0 && localAlbums.length === 0) {
+        clearTimeout(timeout);
+        return jsonResult({ error: "Search temporarily unavailable" }, 429);
       }
     }
 
@@ -206,7 +246,7 @@ async function doSearch(
     });
 
     clearTimeout(timeout);
-    return Response.json({
+    return jsonResult({
       songs: [...localSongs, ...dedupedMbSongs],
       artists: localArtists,
       albums: localAlbums,
@@ -214,9 +254,9 @@ async function doSearch(
   } catch (err) {
     clearTimeout(timeout);
     console.error("[search]", err);
-    return Response.json(
+    return jsonResult(
       { error: err instanceof Error ? err.message : "Search failed" },
-      { status: 429 },
+      429,
     );
   }
 }
@@ -254,4 +294,31 @@ async function searchLocalAlbums(q: string): Promise<SearchHit[]> {
   });
   if (error || !data) return [];
   return (data as DBAlbumHit[]).map(toAlbumHit);
+}
+
+async function searchGeniusForArtwork(q: string): Promise<Map<string, string>> {
+  const token = process.env.GENIUS_ACCESS_TOKEN;
+  const map = new Map<string, string>();
+  if (!token) return map;
+
+  try {
+    const res = await fetch(
+      `https://api.genius.com/search?q=${encodeURIComponent(q)}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!res.ok) return map;
+    const data = (await res.json()) as {
+      response?: { hits?: Array<{ result: { id: number; title: string; primary_artist?: { id: number; name?: string }; song_art_image_thumbnail_url?: string; header_image_thumbnail_url?: string } }> };
+    };
+
+    for (const h of data.response?.hits ?? []) {
+      const r = h.result;
+      const thumb = r.song_art_image_thumbnail_url ?? r.header_image_thumbnail_url ?? null;
+      if (!thumb || !r.title) continue;
+      const artistName = r.primary_artist?.name ?? "Unknown";
+      const key = `${r.title}|${artistName}`.toLowerCase();
+      if (!map.has(key)) map.set(key, thumb);
+    }
+  } catch {}
+  return map;
 }

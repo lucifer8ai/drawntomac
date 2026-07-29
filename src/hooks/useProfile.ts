@@ -81,7 +81,11 @@ export function useProfile(userId: string | null) {
     fetchStats();
   }, [fetchProfile, fetchStats]);
 
-  async function uploadImage(bucket: "avatars" | "banners", file: File): Promise<string> {
+  async function uploadImage(bucket: "avatars" | "banners", fileOrBlob: File | Blob): Promise<string> {
+    const file = fileOrBlob instanceof File
+      ? fileOrBlob
+      : new File([fileOrBlob], "cropped.jpg", { type: fileOrBlob.type || "image/jpeg" });
+
     const { data: session } = await supabase.auth.getSession();
     const token = session?.session?.access_token;
     if (!token) throw new Error("Not authenticated");
@@ -125,11 +129,11 @@ export function useProfile(userId: string | null) {
     }
   }
 
-  async function uploadBanner(file: File): Promise<string> {
+  async function uploadBanner(file: File | Blob): Promise<string> {
     return await uploadImage("banners", file);
   }
 
-  async function uploadAvatar(file: File): Promise<string> {
+  async function uploadAvatar(file: File | Blob): Promise<string> {
     return await uploadImage("avatars", file);
   }
 

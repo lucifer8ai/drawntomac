@@ -4,9 +4,10 @@ import { FeedTimeline } from "./FeedTimeline";
 import { EmptyFeedState } from "./EmptyFeedState";
 import { PartialErrorBanner } from "./PartialErrorBanner";
 import { NewActivityPill } from "./NewActivityPill";
+import { DiscoverFeedSection } from "./DiscoverFeedSection";
 import { Button } from "@/components/ui/button";
 
-export function FeedPage() {
+function SocialFeedSection() {
   const {
     pages,
     loadMore,
@@ -21,7 +22,6 @@ export function FeedPage() {
     dismissNewActivity,
   } = useFeed();
 
-  // Infinite scroll
   useEffect(() => {
     function handleScroll() {
       if (!hasMore || loading) return;
@@ -93,6 +93,16 @@ export function FeedPage() {
           <p className="text-xs text-muted-foreground">You&apos;re all caught up.</p>
         </div>
       )}
+    </>
+  );
+}
+
+export function FeedPage() {
+  return (
+    <>
+      <DiscoverFeedSection />
+      <div className="mx-4 my-6 h-px bg-border" />
+      <SocialFeedSection />
     </>
   );
 }

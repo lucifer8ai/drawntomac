@@ -192,9 +192,9 @@ export function AppHeader({
   }
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: "feed", label: "Feed" },
-    { id: "diary", label: "Diary" },
-    { id: "discover", label: "Discover" },
+    { id: "feed", label: "#d.Yours" },
+    { id: "diary", label: "#d.You" },
+    { id: "discover", label: "#d.New" },
   ];
 
   return (

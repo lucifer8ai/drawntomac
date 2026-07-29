@@ -1,4 +1,5 @@
 import type { Tables } from "@/lib/types";
+import { ArtistLink } from "@/components/artist";
 
 type SongWithArtist = Tables<"songs"> & { artist: Tables<"artists"> | null };
 
@@ -26,13 +27,13 @@ export function SongHeader({ song, songArtists }: { song: SongInfo; songArtists?
           {songArtists!.map((sa, i) => (
             <span key={sa.artist?.id ?? i}>
               {i > 0 && <span>{sa.join_phrase}</span>}
-              <span>{sa.artist?.name ?? "Unknown"}</span>
+              <ArtistLink name={sa.artist?.name ?? null} slug={sa.artist?.slug ?? null} />
             </span>
           ))}
         </p>
       ) : (
         <p className="mt-2 text-base md:text-lg font-medium text-artist">
-          {song.artist?.name ?? "Unknown artist"}
+          <ArtistLink name={song.artist?.name ?? null} slug={song.artist?.slug ?? null} />
         </p>
       )}
 

@@ -132,7 +132,7 @@ function ListenerWall() {
 // --- Auth Form ---
 
 function AuthForm() {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signup" | "signin">("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -177,17 +177,21 @@ function AuthForm() {
 
   return (
     <>
-      <div className="mb-8 grid grid-cols-2 rounded-full bg-input/50 p-1">
-        {(["signin", "signup"] as const).map((opt) => (
+      <div className="mb-8 grid grid-cols-2 rounded-lg bg-input p-1">
+        {(["signup", "signin"] as const).map((opt) => (
           <button
             type="button"
             key={opt}
             onClick={() => setMode(opt)}
-            className={`rounded-full py-2.5 text-sm font-semibold transition-all ${
-              mode === opt ? "bg-foreground text-background" : "bg-transparent text-foreground/60"
-            }`}
+            className={`min-h-[44px] rounded-lg py-2.5 text-sm font-semibold transition-all duration-150
+              focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.97]
+              ${
+                mode === opt
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-transparent text-foreground/60 hover:text-foreground"
+              }`}
           >
-            {opt === "signin" ? "Sign in" : "Sign up"}
+            {opt === "signup" ? "Sign up" : "Sign in"}
           </button>
         ))}
       </div>

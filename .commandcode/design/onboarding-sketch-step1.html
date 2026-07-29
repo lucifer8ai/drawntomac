@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>drawnTo — Pick 3 Artists</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+    background: oklch(0.04 0.002 280);
+    color: oklch(0.90 0.01 90);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 60px 16px 32px;
+  }
+  /* Intentionally rough aesthetic - system fonts fallback, thin gray borders, sketch-like */
+  .container { width: 100%; max-width: 480px; }
+  .logo { font-size: 24px; font-weight: 800; color: oklch(0.85 0 0); margin-bottom: 48px; }
+  
+  /* Step dots */
+  .steps { display: flex; gap: 8px; margin-bottom: 40px; }
+  .step-dot { 
+    width: 32px; height: 4px; border-radius: 4px; 
+    background: oklch(0.90 0.01 90 / 20%); border: 1px dashed oklch(0.90 0.01 90 / 30%);
+  }
+  .step-dot.active { background: oklch(0.85 0 0); border-color: oklch(0.85 0 0); }
+  
+  .headline { font-size: 28px; font-weight: 700; margin-bottom: 8px; line-height: 1.2; }
+  .subtext { font-size: 16px; color: oklch(0.58 0.02 85); margin-bottom: 32px; }
+  
+  /* Counter */
+  .counter { 
+    font-size: 14px; color: oklch(0.58 0.02 85); 
+    margin-bottom: 16px; text-align: right;
+  }
+  .counter span { color: oklch(0.55 0.16 150); font-weight: 600; }
+  
+  /* Artist row - compact list with checkbox */
+  .artist-list { display: flex; flex-direction: column; gap: 2px; }
+  .artist-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: 8px;
+    border: 1px dashed oklch(0.90 0.01 90 / 15%);
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+  .artist-row:hover { 
+    border-color: oklch(0.90 0.01 90 / 25%);
+    background: oklch(0.90 0.01 90 / 3%);
+  }
+  .artist-row.selected { 
+    border-color: oklch(0.55 0.16 150 / 40%); 
+    background: oklch(0.55 0.16 150 / 8%);
+  }
+  .artist-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: oklch(0.13 0.003 280);
+    border: 1px dashed oklch(0.90 0.01 90 / 20%);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: oklch(0.58 0.02 85);
+  }
+  .artist-avatar.selected { border-color: oklch(0.55 0.16 150 / 60%); }
+  .artist-name { flex: 1; font-size: 15px; font-weight: 500; }
+  .artist-song-count { font-size: 13px; color: oklch(0.58 0.02 85); }
+  
+  /* Checkbox */
+  .checkbox {
+    width: 22px; height: 22px; border-radius: 4px;
+    border: 1.5px dashed oklch(0.90 0.01 90 / 30%);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .checkbox.selected {
+    background: oklch(0.55 0.16 150); border-color: oklch(0.55 0.16 150);
+  }
+  .checkbox.selected::after { content: "✓"; color: oklch(0 0 0); font-size: 13px; font-weight: 700; }
+  .checkbox.disabled { opacity: 0.3; }
+  
+  /* Continue button */
+  .continue-btn {
+    width: 100%; padding: 14px; border-radius: 8px;
+    border: 1px dashed oklch(0.90 0.01 90 / 16%);
+    background: oklch(0.85 0 0 / 8%); color: oklch(0.58 0.02 85);
+    font-size: 15px; font-weight: 600; font-family: inherit;
+    margin-top: 40px; cursor: not-allowed; text-align: center;
+  }
+  .continue-btn.active {
+    background: oklch(0.85 0 0); color: oklch(0.04 0.002 280);
+    border-color: oklch(0.85 0 0); cursor: pointer;
+  }
+  
+  /* Sketch annotations */
+  .annotation { 
+    font-size: 11px; color: oklch(0.58 0.02 85); font-style: italic; 
+    margin-top: 4px; text-align: right;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo">#d.To</div>
+  
+  <div class="steps">
+    <div class="step-dot active"></div>
+    <div class="step-dot"></div>
+    <div class="step-dot"></div>
+  </div>
+  
+  <div class="headline">Pick 3 artists you listen to.</div>
+  <div class="subtext">We'll curate your feed based on your taste.</div>
+  
+  <!-- MAX 3 SELECTION ENFORCED -->
+  <div class="counter"><span>2</span> of 3 selected</div>
+  
+  <div class="artist-list">
+    <!-- SELECTED + HIGHLIGHTED -->
+    <div class="artist-row selected">
+      <div class="artist-avatar selected">SK</div>
+      <div class="artist-name">Seedhe Maut</div>
+      <div class="artist-song-count">24 songs</div>
+      <div class="checkbox selected"></div>
+    </div>
+    
+    <!-- SELECTED -->
+    <div class="artist-row selected">
+      <div class="artist-avatar selected">DI</div>
+      <div class="artist-name">DIVINE</div>
+      <div class="artist-song-count">18 songs</div>
+      <div class="checkbox selected"></div>
+    </div>
+    
+    <!-- UNSELECTED, HOVER -->
+    <div class="artist-row" style="border-color: oklch(0.90 0.01 90 / 25%); background: oklch(0.90 0.01 90 / 3%);">
+      <div class="artist-avatar">KR</div>
+      <div class="artist-name">KR$NA</div>
+      <div class="artist-song-count">31 songs</div>
+      <div class="checkbox"></div>
+    </div>
+    
+    <!-- UNSELECTED, MAX REACHED - CHECKBOX DISABLED -->
+    <div class="artist-row">
+      <div class="artist-avatar">AP</div>
+      <div class="artist-name">AP Dhillon</div>
+      <div class="artist-song-count">15 songs</div>
+      <div class="checkbox disabled"></div>
+    </div>
+    
+    <!-- UNSELECTED, NORMAL -->
+    <div class="artist-row">
+      <div class="artist-avatar">AJ</div>
+      <div class="artist-name">Anuv Jain</div>
+      <div class="artist-song-count">12 songs</div>
+      <div class="checkbox"></div>
+    </div>
+    
+    <div class="artist-row">
+      <div class="artist-avatar">PC</div>
+      <div class="artist-name">Prateek Kuhad</div>
+      <div class="artist-song-count">11 songs</div>
+      <div class="checkbox"></div>
+    </div>
+    
+    <div class="artist-row">
+      <div class="artist-avatar">KA</div>
+      <div class="artist-name">Karan Aujla</div>
+      <div class="artist-song-count">19 songs</div>
+      <div class="checkbox"></div>
+    </div>
+  </div>
+  
+  <!-- DISABLED UNTIL 3 SELECTED -->
+  <div class="continue-btn">Continue</div>
+  <div class="annotation">Disabled until 3 artists selected</div>
+  
+  <!-- ALTERNATE: ACTIVE STATE (3 selected) -->
+  <div class="continue-btn active" style="margin-top: 12px;">Continue</div>
+  <div class="annotation">Active: 3 selected, ready to proceed</div>
+</div>
+</body>
+</html>

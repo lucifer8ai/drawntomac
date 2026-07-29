@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { Flame } from "lucide-react";
 import type { MoverSong } from "@/hooks/useTopMovers";
+import { ArtistLink } from "@/components/artist";
+import { slugifyBase } from "@/lib/slugify";
 
 interface TopMoversStripProps {
   songs: MoverSong[];
@@ -41,7 +43,9 @@ export function TopMoversStrip({ songs, loading, error }: TopMoversStripProps) {
               {song.rankDelta !== null && song.rankDelta > 0 ? `↑${song.rankDelta}` : 'New'}
             </span>
             <div className="truncate text-xs font-semibold">{song.title}</div>
-            <div className="truncate text-[11px] text-muted-foreground">{song.artistName}</div>
+            <div className="truncate text-[11px] text-muted-foreground" onClick={(e) => e.stopPropagation()}>
+              <ArtistLink name={song.artistName} slug={song.artistName ? slugifyBase(song.artistName).slice(0, 80) : null} className="text-muted-foreground" />
+            </div>
           </Link>
         ))}
       </div>

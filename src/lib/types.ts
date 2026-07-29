@@ -261,6 +261,7 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string
+          discover_artist_ids: string[] | null
           display_name: string | null
           display_name_visible: boolean
           id: string
@@ -278,6 +279,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          discover_artist_ids?: string[] | null
           display_name?: string | null
           display_name_visible?: boolean
           id: string
@@ -295,6 +297,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          discover_artist_ids?: string[] | null
           display_name?: string | null
           display_name_visible?: boolean
           id?: string
@@ -324,6 +327,50 @@ export type Database = {
           window_start?: string
         }
         Relationships: []
+      }
+      release_groups: {
+        Row: {
+          artist_id: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          musicbrainz_id: string
+          primary_type: string | null
+          release_date: string | null
+          slug: string
+          title: string
+        }
+        Insert: {
+          artist_id?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          musicbrainz_id: string
+          primary_type?: string | null
+          release_date?: string | null
+          slug: string
+          title: string
+        }
+        Update: {
+          artist_id?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          musicbrainz_id?: string
+          primary_type?: string | null
+          release_date?: string | null
+          slug?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "release_groups_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "artists"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       review_comments: {
         Row: {
@@ -396,9 +443,11 @@ export type Database = {
           musicbrainz_id: string | null
           preview_url: string | null
           release_date: string | null
+          release_group_id: string | null
           release_group_mbid: string | null
           slug: string
           title: string
+          track_number: number | null
         }
         Insert: {
           artist_id?: string | null
@@ -412,9 +461,11 @@ export type Database = {
           musicbrainz_id?: string | null
           preview_url?: string | null
           release_date?: string | null
+          release_group_id?: string | null
           release_group_mbid?: string | null
           slug: string
           title: string
+          track_number?: number | null
         }
         Update: {
           artist_id?: string | null
@@ -428,9 +479,11 @@ export type Database = {
           musicbrainz_id?: string | null
           preview_url?: string | null
           release_date?: string | null
+          release_group_id?: string | null
           release_group_mbid?: string | null
           slug?: string
           title?: string
+          track_number?: number | null
         }
         Relationships: [
           {
@@ -438,6 +491,49 @@ export type Database = {
             columns: ["artist_id"]
             isOneToOne: false
             referencedRelation: "artists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "songs_release_group_id_fkey"
+            columns: ["release_group_id"]
+            isOneToOne: false
+            referencedRelation: "release_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      song_artists: {
+        Row: {
+          artist_id: string
+          join_phrase: string
+          position: number
+          song_id: string
+        }
+        Insert: {
+          artist_id: string
+          join_phrase?: string
+          position?: number
+          song_id: string
+        }
+        Update: {
+          artist_id?: string
+          join_phrase?: string
+          position?: number
+          song_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "song_artists_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "artists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "song_artists_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
             referencedColumns: ["id"]
           },
         ]
@@ -450,6 +546,20 @@ export type Database = {
       check_rate_limit: {
         Args: { lim_key: string; lim_limit?: number; lim_window_sec?: number }
         Returns: boolean
+      }
+      get_artist_discography: {
+        Args: { p_artist_id: string }
+        Returns: {
+          id: string
+          title: string
+          slug: string
+          primary_artist_name: string
+          primary_artist_slug: string
+          primary_artist_image_url: string | null
+          role: string
+          image_url: string | null
+          created_at: string
+        }[]
       }
       get_compatible_users: {
         Args: { current_user_id: string; sort_mode?: string; page_offset?: number }
@@ -480,6 +590,18 @@ export type Database = {
           song_id: string
           source_display_name: string | null
           title: string
+        }[]
+      }
+      get_connecting_song_details: {
+        Args: { viewer_id: string; target_id: string }
+        Returns: {
+          song_id: string
+          title: string
+          slug: string
+          artist_name: string | null
+          album_art_url: string | null
+          viewer_types: string[]
+          target_types: string[]
         }[]
       }
       get_for_you_songs: {
@@ -586,6 +708,24 @@ export type Database = {
           image_url: string | null
           name: string
           song_count: number
+        }[]
+      }
+      get_discover_feed: {
+        Args: { p_user_id: string }
+        Returns: {
+          artist_id: string
+          artist_name: string
+          artist_slug: string
+          artist_image_url: string | null
+          release_group_id: string
+          release_group_title: string
+          release_group_slug: string
+          release_group_image_url: string | null
+          release_group_release_date: string | null
+          song_id: string
+          song_title: string
+          song_slug: string
+          song_track_number: number
         }[]
       }
     }

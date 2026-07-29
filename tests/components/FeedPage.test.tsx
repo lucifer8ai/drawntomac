@@ -9,6 +9,14 @@ vi.mock("@/hooks/useFeed", () => ({
   useFeed: vi.fn(),
 }));
 
+vi.mock("@/hooks/useDiscoverFeed", () => ({
+  useDiscoverFeed: vi.fn(),
+}));
+
+vi.mock("@/components/feed/DiscoverFeedSection", () => ({
+  DiscoverFeedSection: () => <div data-testid="discover-feed" />,
+}));
+
 vi.mock("@tanstack/react-router", () => ({
   Link: ({ to, className, children }: any) => (
     <a href={to} className={className}>
@@ -53,6 +61,19 @@ describe("FeedPage", () => {
       refresh: mockRefresh,
       dismissNewActivity: vi.fn(),
     });
+
+    const { useDiscoverFeed } = await import("@/hooks/useDiscoverFeed");
+    (useDiscoverFeed as any).mockReturnValue({
+      feed: [],
+      loading: false,
+      error: null,
+      refresh: vi.fn(),
+    });
+  });
+
+  it("renders both discover feed and social feed sections", () => {
+    render(<FeedPage />);
+    expect(screen.getByTestId("discover-feed")).toBeTruthy();
   });
 
   it("shows empty state when no entries", () => {
@@ -138,5 +159,11 @@ describe("FeedPage", () => {
 
     render(<FeedPage />);
     expect(screen.getByTestId("feed-timeline")).toBeTruthy();
+  });
+
+  it("renders a separator between discover and social sections", () => {
+    render(<FeedPage />);
+    const separators = document.querySelectorAll(".h-px.bg-border");
+    expect(separators.length).toBe(1);
   });
 });

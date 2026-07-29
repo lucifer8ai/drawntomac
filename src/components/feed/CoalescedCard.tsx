@@ -2,6 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { Headphones, Heart, ThumbsDown, Pencil, Circle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AvatarStack, type AvatarUser } from "./AvatarStack";
+import { ArtistLink } from "@/components/artist";
+import { slugifyBase } from "@/lib/slugify";
 import type { CoalescedGroup } from "./FeedTimeline";
 
 const BADGE_MAX = 4;
@@ -63,9 +65,11 @@ export function CoalescedCard({ group }: CoalescedCardProps) {
   const visibleTypes = allTypes.slice(0, BADGE_MAX);
   const extraTypes = allTypes.length - BADGE_MAX;
 
+  const artistSlug = group.artistName ? slugifyBase(group.artistName).slice(0, 80) : null;
+
   // Find the first review body with its author
   const reviewEntry = group.users.find((u) => u.bodies.length > 0);
-  const reviewBody = reviewEntry?.bodies[0];
+  const reviewBody = reviewEntry?.bodies[0] as string | undefined;
   const reviewAuthor = reviewEntry
     ? (reviewEntry.displayName ?? reviewEntry.username)
     : null;
@@ -85,8 +89,8 @@ export function CoalescedCard({ group }: CoalescedCardProps) {
               {group.songTitle}
             </div>
             {group.artistName && (
-              <div className="text-xs text-muted-foreground truncate" title={group.artistName}>
-                {group.artistName}
+              <div className="text-xs text-muted-foreground truncate" title={group.artistName} onClick={(e) => e.stopPropagation()}>
+                <ArtistLink name={group.artistName} slug={artistSlug} className="text-muted-foreground" />
               </div>
             )}
           </div>

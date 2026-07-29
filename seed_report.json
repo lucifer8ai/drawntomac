@@ -1,0 +1,14 @@
+{
+  "totalArtists": 7,
+  "completedArtists": 7,
+  "songsImported": 64,
+  "songsSkipped": 0,
+  "songsExisting": 6,
+  "errors": [],
+  "perBucket": {
+    "Hindi Indie/Pop": {
+      "imported": 64,
+      "skipped": 6
+    }
+  }
+}

@@ -5,13 +5,18 @@ import { toast } from "sonner";
 
 interface CityStepProps {
   onComplete: () => void;
+  selectedArtists: string[];
 }
 
-export function CityStep({ onComplete }: CityStepProps) {
+export function CityStep({ onComplete, selectedArtists }: CityStepProps) {
   const [locationId, setLocationId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
+    if (!selectedArtists || selectedArtists.length === 0) {
+      toast.error("Please go back and select artists first.");
+      return;
+    }
     setSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -28,10 +33,11 @@ export function CityStep({ onComplete }: CityStepProps) {
           .from("profiles")
           .update({
             onboarding_completed: true,
-            onboarding_step: 4,
+            onboarding_step: 3,
             location_id: locationId,
             city: loc?.city ?? null,
             country: loc?.country,
+            discover_artist_ids: selectedArtists,
           })
           .eq("id", user.id);
       } else {
@@ -39,7 +45,8 @@ export function CityStep({ onComplete }: CityStepProps) {
           .from("profiles")
           .update({
             onboarding_completed: true,
-            onboarding_step: 4,
+            onboarding_step: 3,
+            discover_artist_ids: selectedArtists,
           })
           .eq("id", user.id);
       }
@@ -54,6 +61,10 @@ export function CityStep({ onComplete }: CityStepProps) {
   };
 
   const handleSkip = async () => {
+    if (!selectedArtists || selectedArtists.length === 0) {
+      toast.error("Please go back and select artists first.");
+      return;
+    }
     setSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -63,7 +74,8 @@ export function CityStep({ onComplete }: CityStepProps) {
         .from("profiles")
         .update({
           onboarding_completed: true,
-          onboarding_step: 4,
+          onboarding_step: 3,
+          discover_artist_ids: selectedArtists,
         })
         .eq("id", user.id);
 
@@ -78,7 +90,7 @@ export function CityStep({ onComplete }: CityStepProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 rounded-2xl border border-border/50 bg-raised/50 p-6 backdrop-blur-sm">
       <div className="space-y-2">
         <h2 className="text-[28px] font-bold text-foreground" style={{ fontFamily: "DM Sans, sans-serif" }}>
           Where are you? <span className="text-muted-foreground text-lg">(optional)</span>

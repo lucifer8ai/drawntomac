@@ -26,7 +26,7 @@ export function DiaryPage() {
       .from("diary_entries")
       .select(`
         id, type, created_at, song_id,
-        song:songs ( id, title, slug, genius_thumbnail_url, artist:artists!songs_artist_id_fkey ( name ) )
+        song:songs ( id, title, slug, genius_thumbnail_url, release_group:release_groups!songs_release_group_id_fkey(primary_type, image_url), artist:artists!songs_artist_id_fkey ( name ) )
       `)
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
@@ -52,12 +52,16 @@ export function DiaryPage() {
           case "want": existing.want = true; break;
         }
       } else {
+        const rg = e.song?.release_group;
+        const artwork = (rg?.primary_type === 'Album' && rg?.image_url)
+          ? rg.image_url
+          : (e.song?.genius_thumbnail_url ?? null);
         songMap.set(e.song_id, {
           songId: e.song_id,
           songTitle: e.song?.title ?? "Unknown",
           songSlug: e.song?.slug ?? "",
           artistName: e.song?.artist?.name ?? null,
-          albumArtUrl: e.song?.genius_thumbnail_url ?? null,
+          albumArtUrl: artwork,
           heard: e.type === "heard",
           liked: e.type === "like",
           disliked: e.type === "dislike",

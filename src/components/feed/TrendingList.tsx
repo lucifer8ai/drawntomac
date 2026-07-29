@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import type { TrendingSong } from "@/hooks/useTrendingSongs";
 import { CheckCircle, Heart, Star, X } from "lucide-react";
+import { ArtistLink } from "@/components/artist";
+import { slugifyBase } from "@/lib/slugify";
 
 interface TrendingListProps {
   songs: TrendingSong[];
@@ -172,8 +174,8 @@ export function TrendingList({
                   {song.title}
                 </div>
                 {song.artistName && (
-                  <div className="truncate text-xs text-muted-foreground" title={song.artistName}>
-                    {song.artistName}
+                  <div className="truncate text-xs text-muted-foreground" title={song.artistName} onClick={(e) => e.stopPropagation()}>
+                    <ArtistLink name={song.artistName} slug={song.artistName ? slugifyBase(song.artistName).slice(0, 80) : null} className="text-muted-foreground" />
                   </div>
                 )}
                 <div className="mt-0.5 text-[11px] text-muted-foreground/80">
@@ -240,8 +242,8 @@ export function TrendingList({
                     {song.title}
                   </div>
                   {song.artistName && (
-                    <div className="truncate text-xs text-muted-foreground" title={song.artistName}>
-                      {song.artistName}
+                    <div className="truncate text-xs text-muted-foreground" title={song.artistName} onClick={(e) => e.stopPropagation()}>
+                      <ArtistLink name={song.artistName} slug={song.artistName ? slugifyBase(song.artistName).slice(0, 80) : null} className="text-muted-foreground" />
                     </div>
                   )}
                   {matchCount && matchCount > 0 && currentUserId && (

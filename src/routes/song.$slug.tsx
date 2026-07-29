@@ -26,6 +26,13 @@ type Profile = Pick<Tables<"profiles">, "username" | "display_name" | "avatar_ur
 
 type LoaderData = {
   song: SongWithArtist;
+  songArtists: Array<{
+    artist_id: string;
+    position: number;
+    join_phrase: string;
+    artist: Tables<"artists"> | null;
+  }>;
+  artworkUrl: string | null;
 };
 
 export const Route = createFileRoute("/song/$slug")({
@@ -38,8 +45,8 @@ export const Route = createFileRoute("/song/$slug")({
         { title },
         { name: "description", content: song ? `Reviews and listens for ${song.title}.` : "#drawnto" },
         { property: "og:title", content: title },
-        ...(song?.genius_thumbnail_url
-          ? [{ property: "og:image", content: song.genius_thumbnail_url }]
+        ...(data?.artworkUrl
+          ? [{ property: "og:image", content: data.artworkUrl }]
           : []),
       ],
     };
@@ -47,15 +54,29 @@ export const Route = createFileRoute("/song/$slug")({
   loader: async ({ params }) => {
     const { data: song, error } = await supabase
       .from("songs")
-      .select("*, artist:artists!songs_artist_id_fkey(*)")
+      .select("*, artist:artists!songs_artist_id_fkey(*), release_group:release_groups!songs_release_group_id_fkey(primary_type, image_url)")
       .eq("slug", params.slug)
       .maybeSingle();
 
     if (error) throw error;
     if (!song) throw notFound();
 
+    // Album dedup: if Album RG has image, use it instead of per-song thumbnail
+    const releaseGroup = (song as any).release_group;
+    const artworkUrl = (releaseGroup?.primary_type === 'Album' && releaseGroup?.image_url)
+      ? releaseGroup.image_url
+      : (song as any).genius_thumbnail_url;
+
+    const { data: songArtists } = await supabase
+      .from("song_artists")
+      .select("artist_id, position, join_phrase, artist:artists!song_artists_artist_id_fkey(*)")
+      .eq("song_id", (song as any).id)
+      .order("position");
+
     return {
       song: song as unknown as SongWithArtist,
+      songArtists: (songArtists ?? []) as LoaderData["songArtists"],
+      artworkUrl,
     };
   },
   component: SongPage,
@@ -112,7 +133,7 @@ function ReviewSkeletons() {
 }
 
 function SongPage() {
-  const { song } = Route.useLoaderData() as LoaderData;
+  const { song, songArtists, artworkUrl } = Route.useLoaderData() as LoaderData;
 
   const [userId, setUserId] = useState<string | null>(null);
   const [reviews, setReviews] = useState<ReviewEntry[]>([]);
@@ -263,7 +284,7 @@ function SongPage() {
       <main className="mx-auto max-w-5xl px-4 py-8">
         <div className="grid gap-8 md:grid-cols-[320px_1fr]">
           <CoverArt
-            url={song.genius_thumbnail_url}
+            url={artworkUrl}
             title={song.title}
             previewUrl={song.preview_url}
           />
@@ -277,6 +298,7 @@ function SongPage() {
                 preview_url: song.preview_url,
                 artist: song.artist,
               }}
+              songArtists={songArtists as any}
             />
 
             {!userId && <ReviewPrompt />}

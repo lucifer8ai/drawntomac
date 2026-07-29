@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { Headphones, Heart, ThumbsDown, Pencil, Circle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { ArtistLink } from "@/components/artist";
+import { slugifyBase } from "@/lib/slugify";
 
 export interface DiaryCardData {
   songId: string;
@@ -42,8 +44,8 @@ export function DiaryCard({ data }: { data: DiaryCardData }) {
             {data.songTitle}
           </div>
           {data.artistName && (
-            <div className="truncate text-xs text-muted-foreground" title={data.artistName}>
-              {data.artistName}
+            <div className="truncate text-xs text-muted-foreground" title={data.artistName} onClick={(e) => e.stopPropagation()}>
+              <ArtistLink name={data.artistName} slug={slugifyBase(data.artistName).slice(0, 80)} className="text-muted-foreground" />
             </div>
           )}
           <div className="mt-1.5 flex flex-wrap gap-2">

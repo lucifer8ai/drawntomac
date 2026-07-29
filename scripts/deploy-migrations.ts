@@ -114,6 +114,51 @@ async function main() {
   }
 
   console.log(`\nDeployed ${files.length} migrations.`);
+
+  // Post-deploy verification: check that functions created by migrations actually exist
+  const functionRE = /CREATE\s+(OR\s+REPLACE\s+)?FUNCTION\s+public\.(\w+)/gi;
+  let allFunctions: string[] = [];
+  for (const file of files) {
+    const sql = readFileSync(resolve(MIGRATIONS_DIR, file), "utf-8");
+    for (const m of sql.matchAll(functionRE)) {
+      allFunctions.push(m[2]);
+    }
+  }
+
+  if (allFunctions.length > 0) {
+    console.log("\nVerifying deployed functions...");
+    const uniqueFunctions = [...new Set(allFunctions)];
+    let verifyFailed = false;
+    for (const fn of uniqueFunctions) {
+      const { error } = await supabase
+        .rpc("exec_sql", {
+          query: `SELECT proname FROM pg_proc WHERE proname = '${fn}' AND pronamespace = 'public'::regnamespace`,
+        })
+        .maybeSingle();
+
+      if (error) {
+        console.log(`  WARN: Could not verify ${fn}`);
+        continue;
+      }
+
+      // exec_sql returns void, so if no error the query ran. Check via direct rpc
+      const { error: checkErr } = await supabase
+        .rpc("exec_sql", {
+          query: `DO $$ BEGIN PERFORM proname FROM pg_proc WHERE proname = '${fn}' AND pronamespace = 'public'::regnamespace; IF NOT FOUND THEN RAISE EXCEPTION 'function ${fn} not found'; END IF; END $$`,
+        })
+        .maybeSingle();
+
+      if (checkErr) {
+        console.log(`  MISSING  ${fn} — exists in a migration but not on the server`);
+        verifyFailed = true;
+      }
+    }
+    if (verifyFailed) {
+      console.error("\nSome functions from migrations don't exist on the server. Re-run after fixing.");
+    } else {
+      console.log("  All functions verified.");
+    }
+  }
 }
 
 main().catch((e) => {

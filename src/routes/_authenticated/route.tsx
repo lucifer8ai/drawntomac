@@ -30,18 +30,16 @@ export const useTabContext = () => useContext(TabContext);
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async ({ location }) => {
+  beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/" });
-    if (!location.pathname.startsWith("/onboarding")) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("onboarding_completed")
-        .eq("id", data.user.id)
-        .maybeSingle();
-      if (!profile || !profile.onboarding_completed) {
-        throw redirect({ to: "/onboarding", search: { step: 1 } });
-      }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", data.user.id)
+      .maybeSingle();
+    if (!profile || !profile.onboarding_completed) {
+      throw redirect({ to: "/onboarding", search: { step: 1 } });
     }
     return { user: data.user };
   },
@@ -80,6 +78,15 @@ function AuthenticatedLayout() {
       if (data) setProfile(data);
     })();
   }, []);
+
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        navigate({ to: "/" });
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [navigate]);
 
   return (
     <TabContext.Provider value={{ activeTab: tab, setTab: handleTabChange, profile, discoverSection, setDiscoverSection, triggerSearch: () => setSearchTrigger((n) => n + 1) }}>

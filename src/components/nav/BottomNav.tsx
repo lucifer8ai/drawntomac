@@ -3,9 +3,9 @@ import { Newspaper, BookOpen, Compass } from "lucide-react";
 type Tab = "feed" | "diary" | "discover";
 
 const tabs: { id: Tab; label: string; Icon: typeof Newspaper }[] = [
-  { id: "feed", label: "Feed", Icon: Newspaper },
-  { id: "diary", label: "Diary", Icon: BookOpen },
-  { id: "discover", label: "Discover", Icon: Compass },
+  { id: "feed", label: "#d.Yours", Icon: Newspaper },
+  { id: "diary", label: "#d.You", Icon: BookOpen },
+  { id: "discover", label: "#d.New", Icon: Compass },
 ];
 
 export function BottomNav({

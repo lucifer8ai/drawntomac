@@ -9,18 +9,25 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SongSlugRouteImport } from './routes/song.$slug'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as ArtistSlugRouteImport } from './routes/artist.$slug'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as ApiSearchRouteImport } from './routes/api/search'
 import { Route as ApiImportRouteImport } from './routes/api/import'
-import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as AlbumSlugRouteImport } from './routes/album.$slug'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedUserUsernameRouteImport } from './routes/_authenticated/user.$username'
 import { Route as AuthenticatedConnectUsernameRouteImport } from './routes/_authenticated/connect.$username'
 
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
@@ -40,6 +47,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ArtistSlugRoute = ArtistSlugRouteImport.update({
+  id: '/artist/$slug',
+  path: '/artist/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiUploadRoute = ApiUploadRouteImport.update({
   id: '/api/upload',
   path: '/api/upload',
@@ -55,10 +67,10 @@ const ApiImportRoute = ApiImportRouteImport.update({
   path: '/api/import',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => AuthenticatedRouteRoute,
+const AlbumSlugRoute = AlbumSlugRouteImport.update({
+  id: '/album/$slug',
+  path: '/album/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   id: '/home',
@@ -80,11 +92,13 @@ const AuthenticatedConnectUsernameRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRoute
   '/home': typeof AuthenticatedHomeRoute
-  '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/album/$slug': typeof AlbumSlugRoute
   '/api/import': typeof ApiImportRoute
   '/api/search': typeof ApiSearchRoute
   '/api/upload': typeof ApiUploadRoute
+  '/artist/$slug': typeof ArtistSlugRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/song/$slug': typeof SongSlugRoute
   '/connect/$username': typeof AuthenticatedConnectUsernameRoute
@@ -92,11 +106,13 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRoute
   '/home': typeof AuthenticatedHomeRoute
-  '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/album/$slug': typeof AlbumSlugRoute
   '/api/import': typeof ApiImportRoute
   '/api/search': typeof ApiSearchRoute
   '/api/upload': typeof ApiUploadRoute
+  '/artist/$slug': typeof ArtistSlugRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/song/$slug': typeof SongSlugRoute
   '/connect/$username': typeof AuthenticatedConnectUsernameRoute
@@ -106,11 +122,13 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
-  '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/album/$slug': typeof AlbumSlugRoute
   '/api/import': typeof ApiImportRoute
   '/api/search': typeof ApiSearchRoute
   '/api/upload': typeof ApiUploadRoute
+  '/artist/$slug': typeof ArtistSlugRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/song/$slug': typeof SongSlugRoute
   '/_authenticated/connect/$username': typeof AuthenticatedConnectUsernameRoute
@@ -120,11 +138,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/home'
     | '/onboarding'
+    | '/home'
+    | '/album/$slug'
     | '/api/import'
     | '/api/search'
     | '/api/upload'
+    | '/artist/$slug'
     | '/auth/callback'
     | '/song/$slug'
     | '/connect/$username'
@@ -132,11 +152,13 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/home'
     | '/onboarding'
+    | '/home'
+    | '/album/$slug'
     | '/api/import'
     | '/api/search'
     | '/api/upload'
+    | '/artist/$slug'
     | '/auth/callback'
     | '/song/$slug'
     | '/connect/$username'
@@ -145,11 +167,13 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/onboarding'
     | '/_authenticated/home'
-    | '/_authenticated/onboarding'
+    | '/album/$slug'
     | '/api/import'
     | '/api/search'
     | '/api/upload'
+    | '/artist/$slug'
     | '/auth/callback'
     | '/song/$slug'
     | '/_authenticated/connect/$username'
@@ -159,15 +183,25 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  OnboardingRoute: typeof OnboardingRoute
+  AlbumSlugRoute: typeof AlbumSlugRoute
   ApiImportRoute: typeof ApiImportRoute
   ApiSearchRoute: typeof ApiSearchRoute
   ApiUploadRoute: typeof ApiUploadRoute
+  ArtistSlugRoute: typeof ArtistSlugRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   SongSlugRoute: typeof SongSlugRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
@@ -196,6 +230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/artist/$slug': {
+      id: '/artist/$slug'
+      path: '/artist/$slug'
+      fullPath: '/artist/$slug'
+      preLoaderRoute: typeof ArtistSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/upload': {
       id: '/api/upload'
       path: '/api/upload'
@@ -217,12 +258,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiImportRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/onboarding': {
-      id: '/_authenticated/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/album/$slug': {
+      id: '/album/$slug'
+      path: '/album/$slug'
+      fullPath: '/album/$slug'
+      preLoaderRoute: typeof AlbumSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/home': {
       id: '/_authenticated/home'
@@ -250,14 +291,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
-  AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedConnectUsernameRoute: typeof AuthenticatedConnectUsernameRoute
   AuthenticatedUserUsernameRoute: typeof AuthenticatedUserUsernameRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
-  AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedConnectUsernameRoute: AuthenticatedConnectUsernameRoute,
   AuthenticatedUserUsernameRoute: AuthenticatedUserUsernameRoute,
 }
@@ -268,9 +307,12 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  OnboardingRoute: OnboardingRoute,
+  AlbumSlugRoute: AlbumSlugRoute,
   ApiImportRoute: ApiImportRoute,
   ApiSearchRoute: ApiSearchRoute,
   ApiUploadRoute: ApiUploadRoute,
+  ArtistSlugRoute: ArtistSlugRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   SongSlugRoute: SongSlugRoute,
 }
