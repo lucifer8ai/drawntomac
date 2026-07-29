@@ -3,17 +3,10 @@ import { renderHook, waitFor, act } from "@testing-library/react";
 import { useTrendingSongs } from "@/hooks/useTrendingSongs";
 
 const mockRpc = vi.fn();
-const mockSelect = vi.fn();
-const mockIn = vi.fn();
-const mockFrom = vi.fn();
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     rpc: (...args: any[]) => mockRpc(...args),
-    from: (...args: any[]) => {
-      mockFrom(...args);
-      return { select: mockSelect };
-    },
   },
 }));
 
@@ -33,17 +26,8 @@ describe("useTrendingSongs", () => {
   it("loads trending songs with data", async () => {
     mockRpc.mockResolvedValue({
       data: [
-        { song_id: "s1", trending_score: 100, heard_count: 10, like_count: 5, dislike_count: 1, review_count: 3 },
-        { song_id: "s2", trending_score: 80, heard_count: 8, like_count: 4, dislike_count: 0, review_count: 1 },
-      ],
-      error: null,
-    });
-
-    mockSelect.mockReturnValue({ in: mockIn });
-    mockIn.mockResolvedValue({
-      data: [
-        { id: "s1", title: "Song One", slug: "song-one", genius_thumbnail_url: "http://img.com/1.jpg", genre_tags: ["rock"], artist: { name: "Artist A" } },
-        { id: "s2", title: "Song Two", slug: "song-two", genius_thumbnail_url: null, genre_tags: null, artist: null },
+        { song_id: "s1", title: "Song One", slug: "song-one", artist_name: "Artist A", album_art_url: "http://img.com/1.jpg", genre_tags: ["rock"], like_count: 5, heard_count: 10, dislike_count: 1, review_count: 3, trending_score: 100 },
+        { song_id: "s2", title: "Song Two", slug: "song-two", artist_name: null, album_art_url: null, genre_tags: null, like_count: 4, heard_count: 8, dislike_count: 0, review_count: 1, trending_score: 80 },
       ],
       error: null,
     });
@@ -80,13 +64,8 @@ describe("useTrendingSongs", () => {
 
     mockRpc.mockResolvedValueOnce({
       data: [
-        { song_id: "s1", trending_score: 10, heard_count: 1, like_count: 0, dislike_count: 0, review_count: 0 },
+        { song_id: "s1", title: "Fixed", slug: "fixed", artist_name: "X", album_art_url: null, genre_tags: null, like_count: 0, heard_count: 1, dislike_count: 0, review_count: 0, trending_score: 10 },
       ],
-      error: null,
-    });
-    mockSelect.mockReturnValue({ in: mockIn });
-    mockIn.mockResolvedValue({
-      data: [{ id: "s1", title: "Fixed", slug: "fixed", genius_thumbnail_url: null, genre_tags: null, artist: { name: "X" } }],
       error: null,
     });
 

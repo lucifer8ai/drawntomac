@@ -25,19 +25,6 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     rpc: (...args: any[]) => mockRpc(...args),
     from: (table: string) => {
-      if (table === "songs") {
-        return {
-          select: () => ({
-            in: () =>
-              Promise.resolve({
-                data: [
-                  { id: "s1", title: "Trending Song", slug: "trending-song", genius_thumbnail_url: null, genre_tags: ["pop", "rock"], artist: { name: "Artist T" } },
-                ],
-                error: null,
-              }),
-          }),
-        };
-      }
       if (table === "diary_entries") {
         return {
           select: () => ({
@@ -70,7 +57,7 @@ describe("DiscoverPage", () => {
       if (fn === "get_trending_songs") {
         return Promise.resolve({
           data: [
-            { song_id: "s1", trending_score: 100, heard_count: 5, like_count: 3, dislike_count: 0, review_count: 1 },
+            { song_id: "s1", title: "Trending Song", slug: "trending-song", artist_name: "Artist T", album_art_url: null, genre_tags: ["pop", "rock"], like_count: 3, heard_count: 5, dislike_count: 0, review_count: 1, trending_score: 100 },
           ],
           error: null,
         });

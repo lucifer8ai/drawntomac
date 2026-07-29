@@ -17,7 +17,7 @@ export default defineConfig({
     tanstackStart({
       // nitro/build target: defaults to a Node server. Change this if you
       // deploy elsewhere (e.g. "cloudflare-module", "vercel", "netlify").
-      server: { entry: "server", preset: "node-server" },
+      server: { entry: "server" },
     }),
     viteReact(),
   ],
