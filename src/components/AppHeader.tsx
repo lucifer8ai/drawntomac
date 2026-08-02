@@ -406,6 +406,7 @@ function SearchSection({
                   }`}
                   loading="lazy"
                   decoding="async"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                 />
               ) : (
                 <div className="h-10 w-10 rounded bg-white/10 flex items-center justify-center text-muted-foreground text-xs flex-shrink-0">

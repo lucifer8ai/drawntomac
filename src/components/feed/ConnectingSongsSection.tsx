@@ -36,6 +36,7 @@ export function ConnectingSongsSection({ songs, loading }: ConnectingSongsSectio
                 alt={`${song.title} album art`}
                 className="h-16 w-full rounded-lg object-cover mb-1"
                 loading="lazy"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
             ) : (
               <div className="h-16 w-full rounded-lg bg-muted flex items-center justify-center text-xs text-muted-foreground mb-1">

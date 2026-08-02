@@ -21,7 +21,7 @@ export function DiscographyFeed({ songs }: { songs: DiscographySong[] }) {
       {leadSongs.length > 0 && (
         <section>
           <div className="flex items-baseline gap-2 mb-4">
-            <h2 className="text-lg font-bold text-white">As Lead Artist</h2>
+            <h2 className="text-sm md:text-lg font-bold text-white">As Lead Artist</h2>
             <span className="text-xs text-muted-foreground">({leadSongs.length})</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -41,7 +41,7 @@ export function DiscographyFeed({ songs }: { songs: DiscographySong[] }) {
       {featuredSongs.length > 0 && (
         <section>
           <div className="flex items-baseline gap-2 mb-4">
-            <h2 className="text-lg font-bold text-white">Featured / Collaborations</h2>
+            <h2 className="text-sm md:text-lg font-bold text-white">Featured / Collaborations</h2>
             <span className="text-xs text-muted-foreground">({featuredSongs.length})</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">

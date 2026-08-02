@@ -49,3 +49,5 @@
 20260729000001_backfill_primary_type.sql
 20260729000002_artwork_dedup.sql
 20260729000003_backfill_null_album_artwork.sql
+20260729000004_add_admin_role.sql
+20260729000005_add_admin_audit_log.sql

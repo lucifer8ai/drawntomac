@@ -136,10 +136,10 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
       <div className="flex flex-col mx-auto max-w-6xl w-full">
         <div className="w-full aspect-[16/9] md:aspect-[3/1] animate-skeleton" />
         <div className="max-w-2xl mx-auto w-full px-4">
-          <div className="h-28 w-28 rounded-full animate-skeleton -mt-10 md:-mt-12 ring-2 ring-background" />
+          <div className="h-24 w-24 md:h-28 md:w-28 rounded-full animate-skeleton -mt-10 md:-mt-12 ring-2 ring-background" />
           <div className="pt-2 space-y-2">
-            <div className="h-7 w-48 animate-skeleton rounded-lg" />
-            <div className="h-5 w-32 animate-skeleton rounded-lg" />
+            <div className="h-6 md:h-7 w-48 animate-skeleton rounded-lg" />
+            <div className="h-4 md:h-5 w-32 animate-skeleton rounded-lg" />
           </div>
           <div className="pt-2">
             <div className="h-4 w-full animate-skeleton rounded-lg" />
@@ -200,7 +200,7 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
         <div className="max-w-2xl mx-auto w-full px-4">
           {/* Avatar */}
           <div className="-mt-10 md:-mt-12">
-            <div className="h-28 w-28 rounded-full overflow-hidden ring-2 ring-background bg-muted shrink-0">
+            <div className="h-24 w-24 md:h-28 md:w-28 rounded-full overflow-hidden ring-2 ring-background bg-muted shrink-0">
               {profile.avatar_url ? (
                 <img
                   src={profile.avatar_url}
@@ -217,24 +217,24 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
 
           {/* Name block */}
           <div className="pt-2 space-y-1">
-            <div className="text-xl font-bold">
+            <div className="text-lg md:text-xl font-bold">
               {resolvedName}
             </div>
-            <div className="text-base text-muted-foreground">
+            <div className="text-sm md:text-base text-muted-foreground">
               @{profile.username}
             </div>
             {profile.pronouns && (
-              <p className="text-base text-muted-foreground">
+              <p className="text-sm md:text-base text-muted-foreground">
                 {profile.pronouns}
               </p>
             )}
             {profile.bio && (
-              <p className="text-base text-foreground/80 pt-1">
+              <p className="text-sm md:text-base text-foreground/80 pt-1">
                 {profile.bio}
               </p>
             )}
             {locationText && (
-              <p className="text-base text-muted-foreground">
+              <p className="text-sm md:text-base text-muted-foreground">
                 {locationText}
               </p>
             )}

@@ -24,6 +24,7 @@ export function SongCard({
           className="w-full aspect-square object-cover"
           loading="lazy"
           decoding="async"
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
         />
       ) : (
         <div className="w-full aspect-square bg-secondary/20 flex items-center justify-center text-3xl font-bold text-muted-foreground">

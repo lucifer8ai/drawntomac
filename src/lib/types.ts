@@ -265,6 +265,7 @@ export type Database = {
           display_name: string | null
           display_name_visible: boolean
           id: string
+          is_admin: boolean
           location_id: string | null
           onboarding_completed: boolean
           onboarding_step: number
@@ -283,6 +284,7 @@ export type Database = {
           display_name?: string | null
           display_name_visible?: boolean
           id: string
+          is_admin?: boolean
           location_id?: string | null
           onboarding_completed?: boolean
           onboarding_step?: number
@@ -301,6 +303,7 @@ export type Database = {
           display_name?: string | null
           display_name_visible?: boolean
           id?: string
+          is_admin?: boolean
           location_id?: string | null
           onboarding_completed?: boolean
           onboarding_step?: number

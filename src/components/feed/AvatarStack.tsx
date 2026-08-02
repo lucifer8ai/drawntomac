@@ -25,7 +25,7 @@ export function AvatarStack({ users, maxVisible = 4 }: AvatarStackProps) {
           return (
             <div
               key={user.userId}
-              className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-bold text-primary-foreground ring-[3px] ring-raised"
+              className="flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] font-bold text-primary-foreground ring-[3px] ring-raised"
               style={{
                 backgroundColor: user.avatarUrl ? "transparent" : "var(--color-primary)",
                 zIndex: visible.length - i,
@@ -47,14 +47,14 @@ export function AvatarStack({ users, maxVisible = 4 }: AvatarStackProps) {
         })}
         {extra > 0 && (
           <div
-            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground ring-[3px] ring-raised"
+            className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-muted text-[10px] text-muted-foreground ring-[3px] ring-raised"
             style={{ zIndex: 0 }}
           >
             +{extra}
           </div>
         )}
       </div>
-      <span className="ml-2 text-base text-foreground">
+      <span className="ml-2 text-sm md:text-base text-foreground">
         {users.map((u) => u.displayName ?? u.username).join(", ")}
       </span>
     </div>

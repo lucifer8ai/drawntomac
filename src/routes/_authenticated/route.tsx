@@ -6,7 +6,7 @@ import { BottomNav } from "@/components/nav/BottomNav";
 import { ProfileSheet } from "@/components/profile/ProfileSheet";
 
 type Tab = "feed" | "diary" | "discover";
-type DiscoverSection = "for-you" | "new" | "trending" | "people";
+type DiscoverSection = "trending" | "people";
 
 interface TabContextValue {
   activeTab: Tab;
@@ -21,7 +21,7 @@ export const TabContext = createContext<TabContextValue>({
   activeTab: "feed",
   setTab: () => {},
   profile: null,
-  discoverSection: "for-you",
+  discoverSection: "trending",
   setDiscoverSection: () => {},
   triggerSearch: () => {},
 });
@@ -48,7 +48,7 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   const [tab, setTab] = useState<Tab>("feed");
-  const [discoverSection, setDiscoverSection] = useState<DiscoverSection>("for-you");
+  const [discoverSection, setDiscoverSection] = useState<DiscoverSection>("trending");
   const [searchTrigger, setSearchTrigger] = useState(0);
   const [profile, setProfile] = useState<{
     display_name: string | null;

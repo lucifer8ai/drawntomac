@@ -24,11 +24,11 @@ const typeLabels: Record<string, string> = {
   want: "want",
 };
 
-const badgeVariants: Record<string, "heard" | "like" | "dislike" | "want"> = {
+const badgeVariants: Record<string, "heard" | "like" | "dislike" | "want" | "review"> = {
   heard: "heard",
   like: "like",
   dislike: "dislike",
-  review: "like",
+  review: "review",
   want: "want",
 };
 
@@ -80,12 +80,12 @@ export function CoalescedCard({ group }: CoalescedCardProps) {
       params={{ slug: group.songSlug }}
       className="block transition-colors hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
     >
-      <div className="flex gap-3 border-b px-4 py-3">
+      <div className="flex gap-2 md:gap-3 border-b px-4 py-2.5 md:py-3">
         <div className="min-w-0 flex-1">
           <AvatarStack users={avatarUsers} maxVisible={4} />
 
           <div className="mt-1.5">
-            <div className="text-base font-semibold text-foreground truncate" title={group.songTitle}>
+            <div className="text-sm md:text-base font-semibold text-foreground truncate" title={group.songTitle}>
               {group.songTitle}
             </div>
             {group.artistName && (
@@ -128,9 +128,10 @@ export function CoalescedCard({ group }: CoalescedCardProps) {
           <img
             src={group.albumArtUrl}
             alt={`${group.songTitle} album art`}
-            className="h-14 w-14 flex-shrink-0 rounded-lg object-cover"
+            className="h-12 w-12 flex-shrink-0 rounded-lg object-cover"
             loading="lazy"
             decoding="async"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
         )}
       </div>

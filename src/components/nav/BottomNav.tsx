@@ -17,7 +17,7 @@ export function BottomNav({
 }) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 block md:hidden pb-safe">
-      <div className="flex items-center justify-around border-t bg-background/95 py-3 backdrop-blur-xl">
+      <div className="flex items-center justify-around border-t bg-background/95 py-2.5 backdrop-blur-xl">
         {tabs.map(({ id, label, Icon }) => {
           const active = id === activeTab;
           return (

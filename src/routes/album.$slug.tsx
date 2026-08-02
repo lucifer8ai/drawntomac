@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { DetailShell } from "@/components/layout/DetailShell";
+import { slugifyBase } from "@/lib/slugify";
 
 type AlbumSong = {
   id: string;
@@ -107,12 +108,13 @@ function AlbumPage() {
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground/20">
                   <svg
-                    width="64"
-                    height="64"
+                    width="48"
+                    height="48"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="1"
+                    className="md:scale-100 scale-75"
                   >
                     <circle cx="12" cy="12" r="10" />
                     <circle cx="12" cy="10" r="3" />
@@ -124,7 +126,7 @@ function AlbumPage() {
           </div>
 
           <div>
-            <h1 className="text-2xl font-bold text-foreground">
+            <h1 className="text-2xl md:text-5xl font-bold text-foreground">
               {album.title}
             </h1>
 
@@ -132,7 +134,7 @@ function AlbumPage() {
               <Link
                 to="/artist/$slug"
                 params={{ slug: album.artist.slug }}
-                className="mt-1 text-base text-foreground/70 hover:text-foreground transition-colors"
+                className="mt-1 text-sm md:text-lg text-foreground/70 hover:text-foreground transition-colors"
               >
                 by {album.artist.name}
               </Link>

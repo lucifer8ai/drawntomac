@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Share2 } from "lucide-react";
+import { slugifyBase } from "@/lib/slugify";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/lib/types";
@@ -17,6 +18,8 @@ import {
 } from "@/components/song";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ReviewEntry } from "@/components/song";
+import { SongShareCard } from "@/components/share/SongShareCard";
+import { useShareCard } from "@/hooks/useShareCard";
 
 const REVIEWS_PER_PAGE = 10;
 
@@ -34,6 +37,7 @@ type LoaderData = {
   }>;
   artworkUrl: string | null;
 };
+
 
 export const Route = createFileRoute("/song/$slug")({
   head: ({ loaderData }) => {
@@ -94,7 +98,7 @@ export const Route = createFileRoute("/song/$slug")({
   ),
 });
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, onShare }: { children: React.ReactNode; onShare?: () => void }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur-xl">
@@ -102,10 +106,22 @@ function Shell({ children }: { children: React.ReactNode }) {
           <Link to="/home" className="text-2xl font-black tracking-tight text-foreground">
             #d.To
           </Link>
-          <Link to="/home" className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
-            <ArrowLeft size={16} />
-            Back
-          </Link>
+          <div className="flex items-center gap-2">
+            {onShare && (
+              <button
+                type="button"
+                onClick={onShare}
+                aria-label="Share this song"
+                className="flex items-center justify-center h-9 w-9 rounded-lg border bg-raised text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Share2 size={16} />
+              </button>
+            )}
+            <Link to="/home" className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+              <ArrowLeft size={16} />
+              Back
+            </Link>
+          </div>
         </div>
       </header>
       {children}
@@ -279,10 +295,38 @@ function SongPage() {
 
   const totalPages = Math.max(1, Math.ceil(totalReviewCount / REVIEWS_PER_PAGE));
 
+  const shareBadges: { type: string; label: string }[] = [];
+  if (myEntries.heard) shareBadges.push({ type: "heard", label: "heard" });
+  if (myEntries.like) shareBadges.push({ type: "like", label: "liked" });
+  if (myEntries.dislike) shareBadges.push({ type: "dislike", label: "disliked" });
+  if (myEntries.want) shareBadges.push({ type: "want", label: "want to hear" });
+  if (myEntries.review) shareBadges.push({ type: "reviewed", label: "reviewed" });
+
+  const { cardRef, share } = useShareCard({ filename: `${slugifyBase(song.title)}-taste-card.png` });
+
+  const handleShare = async () => {
+    const card = cardRef.current;
+    if (!card) return;
+    toast.promise(share(`${song.title} on #drawnto`), {
+      loading: "Generating taste card…",
+      success: "Taste card ready!",
+      error: "Couldn't generate taste card.",
+    });
+  };
+
   return (
-    <Shell>
-      <main className="mx-auto max-w-5xl px-4 py-8">
-        <div className="grid gap-8 md:grid-cols-[320px_1fr]">
+    <Shell onShare={handleShare}>
+      <div className="absolute left-[-9999px] top-0" aria-hidden="true">
+        <SongShareCard
+          ref={cardRef as React.Ref<HTMLDivElement>}
+          coverUrl={artworkUrl}
+          title={song.title}
+          artistName={song.artist?.name ?? null}
+          badges={shareBadges}
+        />
+      </div>
+      <main className="mx-auto max-w-5xl px-4 py-8 pb-[80px] md:pb-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-[320px_1fr]">
           <CoverArt
             url={artworkUrl}
             title={song.title}
@@ -303,53 +347,55 @@ function SongPage() {
 
             {!userId && <ReviewPrompt />}
 
-            <div className="mt-5 flex flex-wrap gap-2">
-              {!myEntries.want && (
-                <HeardButton
-                  songId={song.id}
-                  userId={userId}
-                  entry={myEntries.heard}
-                  wantEntry={myEntries.want}
-                  onUpdate={loadMyEntries}
-                />
+            <div className="hidden md:block">
+              <div className="mt-5 flex flex-wrap gap-2">
+                {!myEntries.want && (
+                  <HeardButton
+                    songId={song.id}
+                    userId={userId}
+                    entry={myEntries.heard}
+                    wantEntry={myEntries.want}
+                    onUpdate={loadMyEntries}
+                  />
+                )}
+                {!heardToday && !hasInteractions && (
+                  <WantButton
+                    songId={song.id}
+                    userId={userId}
+                    entry={myEntries.want}
+                    onUpdate={loadMyEntries}
+                  />
+                )}
+              </div>
+
+              {userId && (heardToday || hasInteractions) && (
+                <>
+                  <LikeDislike
+                    songId={song.id}
+                    userId={userId}
+                    likeEntry={myEntries.like}
+                    dislikeEntry={myEntries.dislike}
+                    onUpdate={loadMyEntries}
+                  />
+                  <ReviewComposer
+                    songId={song.id}
+                    userId={userId}
+                    entry={myEntries.review}
+                    onPosted={() => {
+                      setReviewPage(1);
+                      void loadReviews();
+                      void loadMyEntries();
+                    }}
+                  />
+                </>
               )}
-              {!heardToday && !hasInteractions && (
-                <WantButton
-                  songId={song.id}
-                  userId={userId}
-                  entry={myEntries.want}
-                  onUpdate={loadMyEntries}
-                />
+
+              {userId && !heardToday && !hasInteractions && !myEntries.want && (
+                <p className="mt-4 text-sm text-muted-foreground">
+                  Log a listen to like, dislike, or review this song.
+                </p>
               )}
             </div>
-
-            {userId && (heardToday || hasInteractions) && (
-              <>
-                <LikeDislike
-                  songId={song.id}
-                  userId={userId}
-                  likeEntry={myEntries.like}
-                  dislikeEntry={myEntries.dislike}
-                  onUpdate={loadMyEntries}
-                />
-                <ReviewComposer
-                  songId={song.id}
-                  userId={userId}
-                  entry={myEntries.review}
-                  onPosted={() => {
-                    setReviewPage(1);
-                    void loadReviews();
-                    void loadMyEntries();
-                  }}
-                />
-              </>
-            )}
-
-            {userId && !heardToday && !hasInteractions && !myEntries.want && (
-              <p className="mt-4 text-sm text-muted-foreground">
-                Log a listen to like, dislike, or review this song.
-              </p>
-            )}
           </div>
         </div>
 
@@ -374,6 +420,40 @@ function SongPage() {
           )}
         </section>
       </main>
+
+      {/* Mobile fixed action bar — above BottomNav (z-40) */}
+      {userId && (
+        <div className="block md:hidden fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-xl border-t pb-safe">
+          <div className="flex items-center justify-center gap-2 px-4 py-2.5">
+            {!myEntries.want && (
+              <HeardButton
+                songId={song.id}
+                userId={userId}
+                entry={myEntries.heard}
+                wantEntry={myEntries.want}
+                onUpdate={loadMyEntries}
+              />
+            )}
+            {!heardToday && !hasInteractions && (
+              <WantButton
+                songId={song.id}
+                userId={userId}
+                entry={myEntries.want}
+                onUpdate={loadMyEntries}
+              />
+            )}
+            {userId && (heardToday || hasInteractions) && (
+              <LikeDislike
+                songId={song.id}
+                userId={userId}
+                likeEntry={myEntries.like}
+                dislikeEntry={myEntries.dislike}
+                onUpdate={loadMyEntries}
+              />
+            )}
+          </div>
+        </div>
+      )}
     </Shell>
   );
 }

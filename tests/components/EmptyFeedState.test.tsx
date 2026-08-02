@@ -9,7 +9,7 @@ function renderWithTabContext(ui: React.ReactElement, tabContextValue: any = {})
     activeTab: "feed" as const,
     setTab: vi.fn(),
     profile: null,
-    discoverSection: "for-you" as const,
+    discoverSection: "trending" as const,
     setDiscoverSection: vi.fn(),
     triggerSearch: vi.fn(),
     ...tabContextValue,

@@ -150,6 +150,14 @@
   }
 }
 
+@media (max-width: 767px) {
+  .mobile-art-detail { max-width: 240px; }
+  .mobile-art-feed { width: 48px; height: 48px; }
+  .mobile-art-discover { width: 88px; }
+  .mobile-avatar { width: 28px; height: 28px; }
+  .mobile-avatar-stack { width: 24px; height: 24px; }
+}
+
 @layer base {
   * {
     border-color: var(--color-border);

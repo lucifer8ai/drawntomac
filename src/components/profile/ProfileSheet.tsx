@@ -57,14 +57,14 @@ export function ProfileSheet({ open, onClose, onProfileUpdate }: ProfileSheetPro
       <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
         <SheetContent
           side="right"
-          className="w-full sm:max-w-sm p-0 overflow-y-auto"
+          className="w-full sm:max-w-sm p-0"
         >
           {loading && !profile ? (
             <div className="flex items-center justify-center py-20">
               <div className="text-sm text-muted-foreground">Loading...</div>
             </div>
           ) : editing && userId && profile ? (
-            <div className="relative">
+            <div className="relative overflow-y-auto max-h-full">
               <button
                 type="button"
                 onClick={() => setEditing(false)}
@@ -101,43 +101,45 @@ export function ProfileSheet({ open, onClose, onProfileUpdate }: ProfileSheetPro
               />
             </div>
           ) : (
-            <div className="flex flex-col min-h-full">
-              {/* Banner */}
-              <div className="relative w-full aspect-[3/1] bg-black overflow-hidden">
-                {profile?.banner_url ? (
-                  <img
-                    src={profile.banner_url}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-black">
-                    <span className="text-4xl md:text-5xl font-semibold tracking-tight text-primary">
-                      #d.You
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Avatar */}
-              <div className="px-4 -mt-12">
-                <div className="h-24 w-24 rounded-full overflow-hidden border-[3px] border-background bg-muted shrink-0">
-                  {profile?.avatar_url ? (
+            <div className="flex flex-col h-full">
+              {/* Banner + Avatar */}
+              <div className="relative w-full aspect-[3/1] bg-black">
+                <div className="w-full h-full overflow-hidden">
+                  {profile?.banner_url ? (
                     <img
-                      src={profile.avatar_url}
-                      alt={displayName}
-                      className="h-full w-full object-cover"
+                      src={profile.banner_url}
+                      alt=""
+                      className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center text-2xl font-bold text-muted-foreground">
-                      {displayName.slice(0, 1).toUpperCase()}
+                    <div className="w-full h-full flex items-center justify-center bg-black">
+                      <span className="text-4xl md:text-5xl font-semibold tracking-tight text-primary">
+                        #d.You
+                      </span>
                     </div>
                   )}
                 </div>
+
+                {/* Avatar — sits on the banner bottom edge, extends downward */}
+                <div className="absolute bottom-0 left-4 translate-y-1/2">
+                  <div className="h-24 w-24 rounded-full overflow-hidden border-[3px] border-background bg-muted shrink-0">
+                    {profile?.avatar_url ? (
+                      <img
+                        src={profile.avatar_url}
+                        alt={displayName}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-2xl font-bold text-muted-foreground">
+                        {displayName.slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {/* Info */}
-              <div className="px-4 pt-2 space-y-1">
+              {/* Info — pad top to clear the overlapping avatar half */}
+              <div className="px-4 pt-14 space-y-1">
                 <div className="text-sm text-muted-foreground">
                   @{profile?.username ?? "..."}
                 </div>
@@ -161,62 +163,63 @@ export function ProfileSheet({ open, onClose, onProfileUpdate }: ProfileSheetPro
                 )}
               </div>
 
-              {/* Taste stats */}
-              <div className="px-4 pt-4">
-                <ProfileStatsRow stats={tasteStats} loading={statsLoading} />
-              </div>
+              {/* Scrollable content */}
+              <div className="flex-1 overflow-y-auto px-4 pb-6">
 
-              {/* Stats */}
-              <div className="px-4 pt-3 flex gap-4">
-                <button
-                  type="button"
-                  onClick={() => setFollowSheet("following")}
-                  className="text-sm hover:underline cursor-pointer"
-                >
-                  <span className="font-semibold">{stats.followingCount}</span>{" "}
-                  <span className="text-muted-foreground">following</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFollowSheet("followers")}
-                  className="text-sm hover:underline cursor-pointer"
-                >
-                  <span className="font-semibold">{stats.followerCount}</span>{" "}
-                  <span className="text-muted-foreground">followers</span>
-                </button>
-              </div>
-
-              {/* Actions */}
-              <div className="px-4 pt-4 space-y-2">
-                <Button
-                  onClick={() => setEditing(true)}
-                  className="w-full h-11 rounded-lg active:scale-[0.97]"
-                >
-                  <Pencil size={16} className="mr-2" />
-                  Edit Profile
-                </Button>
-              </div>
-
-              {/* Account Settings */}
-              {userId && (
-                <div className="border-t border-border/20 pt-4 mt-4 mx-4">
-                  <AccountSettings />
+                {/* Taste stats */}
+                <div className="pt-4">
+                  <ProfileStatsRow stats={tasteStats} loading={statsLoading} />
                 </div>
-              )}
 
-              {/* Spacer */}
-              <div className="flex-1" />
+                {/* Stats */}
+                <div className="pt-3 flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setFollowSheet("following")}
+                    className="text-sm hover:underline cursor-pointer"
+                  >
+                    <span className="font-semibold">{stats.followingCount}</span>{" "}
+                    <span className="text-muted-foreground">following</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFollowSheet("followers")}
+                    className="text-sm hover:underline cursor-pointer"
+                  >
+                    <span className="font-semibold">{stats.followerCount}</span>{" "}
+                    <span className="text-muted-foreground">followers</span>
+                  </button>
+                </div>
 
-              {/* Sign out */}
-              <div className="px-4 pt-4 pb-6">
-                <Button
-                  variant="ghost"
-                  onClick={handleSignOut}
-                  className="w-full h-11 rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <LogOut size={16} className="mr-2" />
-                  Sign Out
-                </Button>
+                {/* Actions */}
+                <div className="pt-4 space-y-2">
+                  <Button
+                    onClick={() => setEditing(true)}
+                    className="w-full h-11 rounded-lg active:scale-[0.97]"
+                  >
+                    <Pencil size={16} className="mr-2" />
+                    Edit Profile
+                  </Button>
+                </div>
+
+                {/* Account Settings */}
+                {userId && (
+                  <div className="border-t border-border/20 pt-4 mt-4">
+                    <AccountSettings />
+                  </div>
+                )}
+
+                {/* Sign out */}
+                <div className="pt-4">
+                  <Button
+                    variant="ghost"
+                    onClick={handleSignOut}
+                    className="w-full h-11 rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <LogOut size={16} className="mr-2" />
+                    Sign Out
+                  </Button>
+                </div>
               </div>
             </div>
           )}

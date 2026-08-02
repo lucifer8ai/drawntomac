@@ -18,6 +18,7 @@ const badgeVariants = cva(
         like: "border-transparent bg-like/15 text-like",
         dislike: "border-transparent bg-dislike/15 text-dislike",
         want: "border-transparent bg-want/15 text-want",
+        review: "border-transparent bg-save/15 text-save",
       },
       shape: {
         default: "rounded-md",

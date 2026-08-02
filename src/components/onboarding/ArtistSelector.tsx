@@ -134,7 +134,9 @@ export function ArtistSelector({ selectedArtistIds: initialSelected, onConfirm, 
             >
               <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden shrink-0 flex items-center justify-center">
                 {artist.image_url ? (
-                  <img src={artist.image_url} alt={artist.name} className="w-full h-full object-cover" />
+                  <img src={artist.image_url} alt={artist.name} className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
                 ) : (
                   <span className="text-sm font-semibold text-muted-foreground">
                     {artist.name.charAt(0)}

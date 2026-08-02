@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth/callback")({
   ssr: false,
@@ -18,15 +17,6 @@ function AuthCallback() {
       }
       if (event === "SIGNED_OUT") {
         navigate({ to: "/" });
-      }
-    });
-
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (error) {
-        toast.error("Authentication failed. Please try again.");
-        navigate({ to: "/" });
-      } else if (data.session) {
-        navigate({ to: "/home" });
       }
     });
 

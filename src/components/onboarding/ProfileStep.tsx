@@ -160,7 +160,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      await supabase
+      const { error: updateError } = await supabase
         .from("profiles")
         .update({
           username,
@@ -169,6 +169,8 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
           onboarding_step: 2,
         })
         .eq("id", user.id);
+
+      if (updateError) throw updateError;
 
       onComplete();
     } catch (e: any) {

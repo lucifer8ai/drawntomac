@@ -99,7 +99,7 @@ describe("DiscoverPage", () => {
   it("renders What's Hot section", async () => {
     render(<DiscoverPage />);
     await waitFor(() => {
-      expect(screen.getByText("What's Hot")).toBeTruthy();
+    expect(screen.getByText("Week")).toBeTruthy();
     });
   });
 
@@ -107,7 +107,8 @@ describe("DiscoverPage", () => {
     mockUserId = null;
     render(<DiscoverPage />);
     await waitFor(() => {
-      expect(screen.getByText("What's Hot")).toBeTruthy();
+      expect(screen.getByText("Week")).toBeTruthy();
+      expect(screen.getByText("Month")).toBeTruthy();
     });
     expect(screen.queryByText("People")).toBeFalsy();
   });

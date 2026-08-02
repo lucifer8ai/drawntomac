@@ -231,6 +231,7 @@ export function TrendingList({
                     className="h-8 w-8 flex-shrink-0 rounded object-cover"
                     loading="lazy"
                     decoding="async"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                   />
                 ) : (
                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded bg-muted text-xs text-muted-foreground">

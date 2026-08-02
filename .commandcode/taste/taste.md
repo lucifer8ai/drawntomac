@@ -33,8 +33,4 @@ See [ux/taste.md](ux/taste.md)
 - Use two-phase migrations when adding new values to diary_entries.type CHECK constraint: Phase 1 adds new types (backward-compatible, keeps old ones), Phase 2 removes old types after code deploys. Confidence: 0.65
 
 # architecture
-- Song search should query the local DB first, then when local results are insufficient, call MusicBrainz and Genius APIs in parallel (not sequentially) — DB first, then both external APIs together. Confidence: 0.70
-- Prefer dropping unnecessary complexity when a simpler approach emerges — if existing infrastructure already solves the problem, don't add a new layer. The existing `songs` table IS the cache; a separate `search_cache` table adds coordination overhead for no benefit. Confidence: 0.70
-- When creating new detail page routes (album, artist, song), mirror existing route patterns: same Shell component (sticky header with #d.To logo and Back link), same loader/errorComponent/notFoundComponent structure, same head with dynamic OG meta. Don't invent new structural patterns. Confidence: 0.70
-- Genius API is for artwork enrichment only — use it to fetch thumbnail images for existing search results, not as an independent source of song titles, artist names, or search result entries. Genius hits should not appear as standalone search results. Confidence: 0.80
-
+See [architecture/taste.md](architecture/taste.md)

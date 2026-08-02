@@ -22,6 +22,8 @@ export function CityStep({ onComplete, selectedArtists }: CityStepProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      let updateError: any = null;
+
       if (locationId) {
         const { data: loc } = await supabase
           .from("locations")
@@ -29,7 +31,7 @@ export function CityStep({ onComplete, selectedArtists }: CityStepProps) {
           .eq("id", locationId)
           .maybeSingle();
 
-        await supabase
+        const { error } = await supabase
           .from("profiles")
           .update({
             onboarding_completed: true,
@@ -40,8 +42,10 @@ export function CityStep({ onComplete, selectedArtists }: CityStepProps) {
             discover_artist_ids: selectedArtists,
           })
           .eq("id", user.id);
+
+        updateError = error;
       } else {
-        await supabase
+        const { error } = await supabase
           .from("profiles")
           .update({
             onboarding_completed: true,
@@ -49,7 +53,11 @@ export function CityStep({ onComplete, selectedArtists }: CityStepProps) {
             discover_artist_ids: selectedArtists,
           })
           .eq("id", user.id);
+
+        updateError = error;
       }
+
+      if (updateError) throw updateError;
 
       sessionStorage.removeItem("onboarding_artists");
       onComplete();

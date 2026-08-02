@@ -19,11 +19,11 @@ export function SongHeader({ song, songArtists }: { song: SongInfo; songArtists?
   const hasMultiArtist = songArtists && songArtists.length > 0;
   return (
     <div>
-      <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold leading-tight italic break-words hyphens-auto text-white">
+      <h1 className="font-serif text-2xl md:text-5xl font-bold leading-tight italic break-words hyphens-auto text-white">
         {song.title}
       </h1>
       {hasMultiArtist ? (
-        <p className="mt-2 text-base md:text-lg font-medium text-artist">
+        <p className="mt-2 text-sm md:text-lg font-medium text-artist">
           {songArtists!.map((sa, i) => (
             <span key={sa.artist?.id ?? i}>
               {i > 0 && <span>{sa.join_phrase}</span>}
@@ -32,7 +32,7 @@ export function SongHeader({ song, songArtists }: { song: SongInfo; songArtists?
           ))}
         </p>
       ) : (
-        <p className="mt-2 text-base md:text-lg font-medium text-artist">
+        <p className="mt-2 text-sm md:text-lg font-medium text-artist">
           <ArtistLink name={song.artist?.name ?? null} slug={song.artist?.slug ?? null} />
         </p>
       )}

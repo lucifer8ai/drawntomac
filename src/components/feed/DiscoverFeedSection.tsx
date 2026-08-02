@@ -15,13 +15,14 @@ function AlbumCard({ album }: { album: DiscoverAlbum }) {
       params={{ slug: album.slug }}
       className="flex flex-col gap-1.5 shrink-0 snap-start active:scale-[0.97] transition-transform"
     >
-      <div className="w-[100px] md:w-[140px] aspect-square rounded-2xl border border-border bg-raised overflow-hidden">
+      <div className="w-[88px] md:w-[140px] aspect-square rounded-2xl border border-border bg-raised overflow-hidden">
         {album.imageUrl ? (
           <img
             src={album.imageUrl}
             alt={album.title}
             className="w-full h-full object-cover"
             loading="lazy"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
@@ -33,7 +34,7 @@ function AlbumCard({ album }: { album: DiscoverAlbum }) {
           </div>
         )}
       </div>
-      <div className="w-[100px] md:w-[140px]">
+      <div className="w-[88px] md:w-[140px]">
         <p className="text-xs font-medium text-foreground truncate" style={{ fontFamily: "DM Sans, sans-serif" }}>
           {album.title}
         </p>
@@ -47,7 +48,6 @@ function AlbumCard({ album }: { album: DiscoverAlbum }) {
 
 function ArtistSection({ artist, maxVisible = 5 }: { artist: ArtistAlbumFeed; maxVisible?: number }) {
   const [expanded, setExpanded] = useState(false);
-  const visibleAlbums = expanded ? artist.albums : artist.albums.slice(0, maxVisible);
   const remaining = artist.albums.length - maxVisible;
 
   return (
@@ -65,7 +65,7 @@ function ArtistSection({ artist, maxVisible = 5 }: { artist: ArtistAlbumFeed; ma
         <Link
           to="/artist/$slug"
           params={{ slug: artist.artistSlug }}
-          className="text-sm font-semibold text-foreground hover:opacity-80 transition-opacity"
+          className="text-xs md:text-sm font-semibold text-foreground hover:opacity-80 transition-opacity"
           style={{ fontFamily: "DM Sans, sans-serif" }}
         >
           {artist.artistName}
@@ -76,28 +76,25 @@ function ArtistSection({ artist, maxVisible = 5 }: { artist: ArtistAlbumFeed; ma
         style={{ scrollSnapType: "x mandatory" }}
         aria-label={`Albums by ${artist.artistName}`}
       >
-        {visibleAlbums.map((album) => (
+        {(expanded ? artist.albums : artist.albums.slice(0, maxVisible)).map((album) => (
           <AlbumCard key={album.releaseGroupId} album={album} />
         ))}
         {!expanded && remaining > 0 && (
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="shrink-0 snap-start w-[100px] md:w-[140px] aspect-square rounded-2xl border border-border bg-raised flex items-center justify-center hover:bg-white/[0.03] transition-colors active:scale-[0.97]"
+            className="shrink-0 snap-start w-[88px] md:w-[140px] aspect-square rounded-2xl border border-border bg-raised flex items-center justify-center hover:bg-white/[0.03] transition-colors active:scale-[0.97]"
           >
             <span className="text-sm font-medium text-muted-foreground">+{remaining} more</span>
           </button>
         )}
       </div>
-      {expanded && artist.albums.length > maxVisible && (
-        <div className="flex flex-wrap gap-3 mt-3">
-          {artist.albums.slice(maxVisible).map((album) => (
-            <AlbumCard key={album.releaseGroupId} album={album} />
-          ))}
+      {expanded && remaining > 0 && (
+        <div className="flex justify-end mt-1">
           <button
             type="button"
             onClick={() => setExpanded(false)}
-            className="text-xs text-muted-foreground mt-2"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             Show less
           </button>
@@ -110,8 +107,8 @@ function ArtistSection({ artist, maxVisible = 5 }: { artist: ArtistAlbumFeed; ma
 function SkeletonCard() {
   return (
     <div className="shrink-0 flex flex-col gap-1.5">
-      <div className="w-[100px] md:w-[140px] aspect-square rounded-2xl animate-skeleton" />
-      <div className="w-[100px] md:w-[140px] space-y-1">
+      <div className="w-[88px] md:w-[140px] aspect-square rounded-2xl animate-skeleton" />
+      <div className="w-[88px] md:w-[140px] space-y-1">
         <div className="h-3 w-3/4 rounded animate-skeleton" />
         <div className="h-2.5 w-1/2 rounded animate-skeleton" />
       </div>
@@ -235,7 +232,7 @@ export function DiscoverFeedSection() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-semibold text-foreground" style={{ fontFamily: "DM Sans, sans-serif" }}>
+        <h2 className="text-sm md:text-base font-semibold text-foreground" style={{ fontFamily: "DM Sans, sans-serif" }}>
           Discover Feed
         </h2>
         <div className="flex gap-2">

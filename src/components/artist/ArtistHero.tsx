@@ -16,6 +16,10 @@ export function ArtistHero({
           className="absolute inset-0 w-full h-full object-cover"
           loading="lazy"
           decoding="async"
+          onError={(e) => {
+            const img = e.target as HTMLImageElement;
+            img.style.display = "none";
+          }}
         />
       ) : (
         <div className="absolute inset-0 bg-secondary/20" />

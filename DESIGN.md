@@ -126,7 +126,7 @@ carries hierarchy and register shifts.
 
 ### Principles
 
-- Body text minimum: 16px (`text-base`). `text-sm` (14px) is for metadata only.
+- Body text minimum: 16px (`text-base`). `text-sm` (14px) is for metadata only. Exception: 14px body text on mobile <768px for feed density (see Mobile Scale).
 - Line-height: 1.5–1.6 for body, 1.25 for headings, 1.1 for micro-copy.
 - Tabular figures for any number columns.
 - No letterspacing on lowercase text.
@@ -278,6 +278,55 @@ The splash page carries the violet warmth and grey primary. The burnt rust is go
 
 ---
 
+## Mobile Scale
+
+**Effective:** 2026-08-01
+**Applies to:** viewports <768px (`md:` breakpoint and below). Desktop ≥768px retains the editorial scale above.
+
+### Philosophy
+
+On mobile (<768px), the journal aesthetic means deliberate density: metadata and spacing shrink more aggressively than titles and art. The hierarchy stays — cover art and song titles keep presence; everything else compacts. The PWA home screen (390×844px) is the design target, with safe area insets as first-class layout constraints.
+
+### Typography
+
+| Element | Desktop (≥768px) | Mobile (<768px) | Tailwind |
+|---------|------------------|-----------------|----------|
+| Song/album/artist title (detail) | 48px | 24px | `text-2xl md:text-5xl` |
+| Artist name (detail metadata) | 18px | 14px | `text-sm md:text-lg` |
+| Feed song titles (EntryCard, DiaryCard, CoalescedCard) | 16px | 14px | `text-sm md:text-base` |
+| Feed body / review preview | 16px | 14px | `text-sm md:text-base` |
+| Section headings | 16px | 14px | `text-sm md:text-base` |
+| Metadata, timestamps, badges | 12px | 12px | `text-xs` (unchanged) |
+| Genre tags | 12px | 12px | `text-xs` (unchanged) |
+| Micro-copy, bottom nav labels | 10px | 10px | `text-[10px]` (unchanged) |
+
+**Body text amendment:** The desktop minimum of 16px body text drops to 14px on mobile for feed density. This is an intentional exception — 14px on a 390px phone viewport provides better information density while remaining readable at arm's length. Desktop restores 16px at `md:` via responsive Tailwind classes.
+
+### Component Sizes
+
+| Component | Desktop (≥768px) | Mobile (<768px) | Utility class |
+|-----------|------------------|-----------------|---------------|
+| Detail page cover art | max 320px | max 240px | `mobile-art-detail` |
+| Feed album thumbnails | 56×56px | 48×48px | `mobile-art-feed` |
+| Discover album cards | 140px | 88px | `mobile-art-discover` |
+| User avatars | 32px | 28px | `mobile-avatar` |
+| Coalesced avatar stack | 28px | 24px | `mobile-avatar-stack` |
+
+### Spacing
+
+| Context | Desktop (≥768px) | Mobile (<768px) | Tailwind |
+|---------|------------------|-----------------|----------|
+| Feed card vertical padding | 12px | 10px | `py-2.5 md:py-3` |
+| Feed card gap | 12px | 8px | `gap-2 md:gap-3` |
+| Discover card gap | 12px | 10px | `gap-2.5 md:gap-3` |
+| Content padding | 16px | 16px | `px-4` (unchanged) |
+
+### Touch Targets
+
+All interactive elements maintain 44×44px minimum touch targets, even with compact spacing. The full card tappable area satisfies this requirement for feed and diary cards — the card height itself meets or exceeds 44px at every density level.
+
+---
+
 ## What We Refuse
 
 - Burnt rust / orange as primary identity (replaced with grey)
@@ -286,7 +335,7 @@ The splash page carries the violet warmth and grey primary. The burnt rust is go
 - Emoji as design elements
 - Decorative blobs, wavy dividers, floating circles
 - `rounded-full` on buttons and inputs (reserved for badges/chips/avatars)
-- Body text below 16px
+- Body text below 16px (exception: 14px on mobile <768px for feed density — see Mobile Scale)
 - Color-only encoding (all actions have text labels alongside color)
 - Placeholder-as-label (labels are always visible)
 - "Welcome to...", "Unlock the power of...", or any AI-generated hero copy

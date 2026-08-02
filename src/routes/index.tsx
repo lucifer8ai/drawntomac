@@ -266,6 +266,23 @@ function AuthPage() {
   const imageRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
+    const img = new Image();
+    let timeout: ReturnType<typeof setTimeout>;
+
+    img.onload = () => {
+      clearTimeout(timeout);
+      setImageState("loaded");
+    };
+    img.onerror = () => {
+      clearTimeout(timeout);
+      setImageState("error");
+    };
+    img.src = signBg;
+
+    timeout = setTimeout(() => {
+      setImageState("error");
+    }, 5000);
+
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) {
         navigate({ to: "/home" });
@@ -278,19 +295,34 @@ function AuthPage() {
         navigate({ to: "/home" });
       }
     });
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      sub.subscription.unsubscribe();
+      img.onload = null;
+      img.onerror = null;
+      clearTimeout(timeout);
+    };
   }, [navigate]);
-
-  useEffect(() => {
-    const img = new Image();
-    img.onload = () => setImageState("loaded");
-    img.onerror = () => setImageState("error");
-    img.src = signBg;
-  }, []);
 
   if (checking) return null;
 
-  const showListenerWall = imageState !== "loaded";
+  if (imageState === "loading") {
+    return (
+      <main
+        className="relative h-dvh w-full flex items-center justify-center"
+        style={{ backgroundColor: "oklch(0.04 0.002 280)" }}
+      >
+        <div
+          className="h-3 w-3 rounded-full animate-pulse"
+          style={{
+            backgroundColor: "oklch(0.85 0 0)",
+            boxShadow: "0 0 28px 6px oklch(0.85 0 0 / 0.5)",
+          }}
+        />
+      </main>
+    );
+  }
+
+  const showListenerWall = imageState === "error";
 
   return (
     <main className="relative h-dvh w-full overflow-hidden" style={{ backgroundColor: "oklch(0.04 0.002 280)" }}>

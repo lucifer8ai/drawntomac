@@ -23,14 +23,16 @@ export function CoverArt({
   previewUrl: string | null;
 }) {
   return (
-    <div className="mx-auto w-full max-w-[320px] md:mx-0">
+    <div className="mx-auto w-full max-w-[240px] md:max-w-[320px] md:mx-0">
       <div
         className="aspect-square w-full overflow-hidden rounded-2xl border bg-raised"
       >
         {url ? (
-          <img src={url} alt={title} className="h-full w-full object-cover" loading="lazy" decoding="async" />
+          <img src={url} alt={title} className="h-full w-full object-cover" loading="lazy" decoding="async"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-6xl text-white/20">♫</div>
+          <div className="flex h-full w-full items-center justify-center text-5xl md:text-6xl text-white/20">♫</div>
         )}
       </div>
       <PreviewButton url={previewUrl} />

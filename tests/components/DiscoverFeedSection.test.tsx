@@ -15,7 +15,7 @@ vi.mock("@tanstack/react-router", () => ({
 
 vi.mock("@/routes/_authenticated/route", () => ({
   TabContext: { Provider: ({ children, value }: any) => children },
-  useTabContext: () => ({ triggerSearch: mockTriggerSearch, activeTab: "feed", setTab: vi.fn(), profile: null, discoverSection: "for-you", setDiscoverSection: vi.fn() }),
+  useTabContext: () => ({ triggerSearch: mockTriggerSearch, activeTab: "feed", setTab: vi.fn(), profile: null, discoverSection: "trending", setDiscoverSection: vi.fn() }),
 }));
 
 vi.mock("@/components/ui/dialog", () => ({

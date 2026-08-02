@@ -88,8 +88,7 @@ export function DiscoverPage() {
       {/* ── PEOPLE ── */}
       {!isAnonymous && (
         <section className={`mb-8 transition-opacity duration-150 ${discoverSection === "people" ? "" : "hidden"}`}>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold">People</h2>
+          <div className="flex items-center justify-end mb-4">
             <div className="flex gap-1">
               {(
                 [
@@ -165,8 +164,7 @@ export function DiscoverPage() {
 
       {/* ── WHAT'S HOT ── */}
       <section className={`transition-opacity duration-150 ${discoverSection === "trending" ? "" : "hidden"}`}>
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold">What's Hot</h2>
+        <div className="flex items-center justify-end mb-2">
           <div className="flex gap-1">
             {[
               { label: "Week", days: 7 },

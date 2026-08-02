@@ -2,6 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ArtistHero, ArtistHeader, DiscographyFeed } from "@/components/artist";
+import { slugifyBase } from "@/lib/slugify";
 
 type DiscographySong = {
   id: string;
