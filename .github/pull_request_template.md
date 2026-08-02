@@ -9,4 +9,4 @@ What does this PR do?
 - [ ] Tests pass (`npm test`)
 - [ ] Design matches `DESIGN.md` (if UI change)
 - [ ] Database migration deployed (if schema change)
-- [ ] No force-pushed history (Lovable constraint)
+

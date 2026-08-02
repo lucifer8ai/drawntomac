@@ -29,6 +29,9 @@ See [ux/taste.md](ux/taste.md)
 - When presenting design alternatives (library choices, UX flows, architecture approaches), make the best-UX decision autonomously and explain the reasoning — don't ask the user to pick between options. The user trusts the assistant's judgment on what delivers the best user experience. Confidence: 0.65
 - Before implementing complex multi-step changes, confirm understanding by restating the approach back to the user and wait for explicit approval — don't jump straight into code. Confidence: 0.70
 
+# security
+- Never disclose or commit .env files — they contain sensitive API keys and secrets. Ensure .env is in .gitignore and never output its contents. Confidence: 0.80
+
 # supabase
 - Use two-phase migrations when adding new values to diary_entries.type CHECK constraint: Phase 1 adds new types (backward-compatible, keeps old ones), Phase 2 removes old types after code deploys. Confidence: 0.65
 

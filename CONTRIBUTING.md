@@ -6,7 +6,7 @@
 - `fix/description` — bug fixes
 - `refactor/description` — code improvements with no behavior change
 
-Keep the base branch (`main`) in a working state. Commits pushed to `main` sync to Lovable, so always work on a feature branch and merge via PR.
+Keep the base branch (`main`) in a working state. Always work on a feature branch and merge via PR.
 
 ## Commit Convention
 
@@ -57,6 +57,4 @@ npx vitest --coverage
 
 All visual decisions must align with `DESIGN.md`. It defines fonts, colors, spacing, and the aesthetic direction. Don't deviate without explicit approval. In reviews, flag any code that doesn't match.
 
-## Lovable Constraint
 
-This project is connected to [Lovable](https://lovable.dev). Avoid rewriting published git history — no force pushing, rebasing, amending, or squashing commits that are already pushed. This can cause data loss on Lovable's side. Commits pushed to the connected branch sync back to Lovable, so keep the branch in a working state.
