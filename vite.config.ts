@@ -3,20 +3,14 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import tsConfigPaths from "vite-tsconfig-paths";
+import { nitro } from "nitro/vite";
 
-// Standalone Vite config (no Lovable dependency). Re-implements, individually,
-// the plugins that @lovable.dev/vite-tanstack-config used to bundle:
-//  - tsConfigPaths: resolves the "@/*" import alias from tsconfig.json
-//  - tailwindcss: Tailwind v4 Vite plugin
-//  - tanstackStart: TanStack Start SSR/router plugin (server entry -> src/server.ts)
-//  - viteReact: React fast-refresh support
 export default defineConfig({
   plugins: [
     tsConfigPaths({ projects: ["./tsconfig.json"] }),
     tailwindcss(),
-    tanstackStart({
-      server: { entry: "src/server" },
-    }),
+    tanstackStart(),
+    nitro(),
     viteReact(),
   ],
   resolve: {
