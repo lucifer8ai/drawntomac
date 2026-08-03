@@ -15,7 +15,7 @@ export default defineConfig({
     tsConfigPaths({ projects: ["./tsconfig.json"] }),
     tailwindcss(),
     tanstackStart({
-      server: { entry: "server" },
+      server: { entry: "src/server" },
     }),
     viteReact(),
   ],
