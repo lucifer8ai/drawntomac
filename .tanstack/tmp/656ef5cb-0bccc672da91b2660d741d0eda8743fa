@@ -1,0 +1,70 @@
+import { createFileRoute } from "@tanstack/react-router";
+
+function slugify(title: string, id: string | number): string {
+  const base = title
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]+/g, "")
+    .replace(/-+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  return `${base}-${String(id).slice(-6)}`;
+}
+
+type ChartAlbum = {
+  artistName?: string;
+  id: string;
+  name: string;
+  releaseDate?: string;
+  artworkUrl100?: string;
+  url?: string;
+};
+
+// IMPORTANT: unlike Spotify's /browse/new-releases, iTunes has no public,
+// unauthenticated "new releases" endpoint. This uses Apple's public chart
+// feed (Most Played Albums) as the closest free substitute — it's a
+// popularity chart, not a "just released" feed. True new-release data
+// requires the paid Apple Music API (MusicKit, developer account).
+let cache: { data: ChartAlbum[]; fetchedAt: number } | null = null;
+const CACHE_MS = 1000 * 60 * 30; // 30 minutes
+
+async function getChartAlbums(): Promise<ChartAlbum[]> {
+  if (cache && Date.now() - cache.fetchedAt < CACHE_MS) return cache.data;
+  const endpoint = `https://rss.marketingtools.apple.com/api/v2/us/music/most-played/200/albums.json`;
+  const res = await fetch(endpoint);
+  if (!res.ok) return cache?.data ?? [];
+  const json = (await res.json()) as { feed?: { results?: ChartAlbum[] } };
+  const data = json.feed?.results ?? [];
+  cache = { data, fetchedAt: Date.now() };
+  return data;
+}
+
+export const Route = createFileRoute("/api/new-releases")({
+  server: {
+    handlers: {
+      GET: async ({ request }) => {
+        try {
+          const url = new URL(request.url);
+          const offset = Math.max(0, parseInt(url.searchParams.get("offset") ?? "0", 10) || 0);
+          const all = await getChartAlbums();
+          const page = all.slice(offset, offset + 50);
+          const albums = page.map((a) => ({
+            type: "album" as const,
+            itunesId: a.id,
+            albumName: a.name,
+            artistName: a.artistName ?? "Unknown",
+            artistItunesId: null as string | null,
+            coverUrl: a.artworkUrl100 ? a.artworkUrl100.replace("100x100", "600x600") : null,
+            releaseDate: a.releaseDate ?? null,
+            itunesUrl: a.url ?? null,
+            slug: slugify(a.name, a.id),
+          }));
+          return Response.json({ albums, total: all.length });
+        } catch (err) {
+          console.error("[itunes new-releases]", err);
+          const message = err instanceof Error ? `${err.message}\n${err.stack ?? ""}` : String(err);
+          return Response.json({ albums: [], total: 0, error: message });
+        }
+      },
+    },
+  },
+});
