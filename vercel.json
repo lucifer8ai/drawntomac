@@ -1,8 +1,0 @@
-{
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
-  "rewrites": [
-    { "source": "/assets/(.*)", "destination": "/dist/client/assets/$1" },
-    { "source": "/(.*)", "destination": "/api/index" }
-  ]
-}
