@@ -1,0 +1,14 @@
+{
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "functions": {
+    "api/index.js": {
+      "runtime": "@vercel/node@3",
+      "includeFiles": "dist/**"
+    }
+  },
+  "rewrites": [
+    { "source": "/assets/(.*)", "destination": "/dist/client/assets/$1" },
+    { "source": "/(.*)", "destination": "/api/index" }
+  ]
+}
