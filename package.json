@@ -7,9 +7,9 @@
   "scripts": {
     "preinstall": "echo 'installing'",
     "dev": "vite dev",
-    "build": "vite build",
-    "start": "node dist/server/server.js",
+    "build": "vite build && npx nitro build --preset vercel",
     "build:dev": "vite build --mode development",
+    "start": "node dist/server/server.js",
     "preview": "vite preview",
     "deploy-migrations": "npx tsx scripts/deploy-migrations.ts",
     "lint": "eslint .",
