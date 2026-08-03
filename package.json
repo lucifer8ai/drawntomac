@@ -5,6 +5,7 @@
   "type": "module",
   "packageManager": "npm@11.16.0",
   "scripts": {
+    "preinstall": "echo 'installing'",
     "dev": "vite dev",
     "build": "vite build",
     "start": "node dist/server/server.js",
