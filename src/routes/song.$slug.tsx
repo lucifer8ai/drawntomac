@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, Share2 } from "lucide-react";
+import { ArrowLeft, Share2, Pencil } from "lucide-react";
 import { slugifyBase } from "@/lib/slugify";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -347,55 +347,58 @@ function SongPage() {
 
             {!userId && <ReviewPrompt />}
 
-            <div className="hidden md:block">
-              <div className="mt-5 flex flex-wrap gap-2">
-                {!myEntries.want && (
-                  <HeardButton
-                    songId={song.id}
-                    userId={userId}
-                    entry={myEntries.heard}
-                    wantEntry={myEntries.want}
-                    onUpdate={loadMyEntries}
-                  />
-                )}
-                {!heardToday && !hasInteractions && (
-                  <WantButton
-                    songId={song.id}
-                    userId={userId}
-                    entry={myEntries.want}
-                    onUpdate={loadMyEntries}
-                  />
-                )}
-              </div>
+          {userId && (heardToday || hasInteractions) && (
+            <div id="review-section" className="mt-5">
+              <ReviewComposer
+                songId={song.id}
+                userId={userId}
+                entry={myEntries.review}
+                onPosted={() => {
+                  setReviewPage(1);
+                  void loadReviews();
+                  void loadMyEntries();
+                }}
+              />
+            </div>
+          )}
 
-              {userId && (heardToday || hasInteractions) && (
-                <>
-                  <LikeDislike
-                    songId={song.id}
-                    userId={userId}
-                    likeEntry={myEntries.like}
-                    dislikeEntry={myEntries.dislike}
-                    onUpdate={loadMyEntries}
-                  />
-                  <ReviewComposer
-                    songId={song.id}
-                    userId={userId}
-                    entry={myEntries.review}
-                    onPosted={() => {
-                      setReviewPage(1);
-                      void loadReviews();
-                      void loadMyEntries();
-                    }}
-                  />
-                </>
+          <div className="hidden md:block">
+            <div className="mt-5 flex flex-wrap gap-2">
+              {!myEntries.want && (
+                <HeardButton
+                  songId={song.id}
+                  userId={userId}
+                  entry={myEntries.heard}
+                  wantEntry={myEntries.want}
+                  onUpdate={loadMyEntries}
+                />
               )}
-
-              {userId && !heardToday && !hasInteractions && !myEntries.want && (
-                <p className="mt-4 text-sm text-muted-foreground">
-                  Log a listen to like, dislike, or review this song.
-                </p>
+              {!heardToday && !hasInteractions && (
+                <WantButton
+                  songId={song.id}
+                  userId={userId}
+                  entry={myEntries.want}
+                  onUpdate={loadMyEntries}
+                />
               )}
             </div>
+
+            {userId && (heardToday || hasInteractions) && (
+              <LikeDislike
+                songId={song.id}
+                userId={userId}
+                likeEntry={myEntries.like}
+                dislikeEntry={myEntries.dislike}
+                onUpdate={loadMyEntries}
+              />
+            )}
+
+            {userId && !heardToday && !hasInteractions && !myEntries.want && (
+              <p className="mt-4 text-sm text-muted-foreground">
+                Log a listen to like, dislike, or review this song.
+              </p>
+            )}
+          </div>
           </div>
         </div>
 
@@ -443,13 +446,23 @@ function SongPage() {
               />
             )}
             {userId && (heardToday || hasInteractions) && (
-              <LikeDislike
-                songId={song.id}
-                userId={userId}
-                likeEntry={myEntries.like}
-                dislikeEntry={myEntries.dislike}
-                onUpdate={loadMyEntries}
-              />
+              <>
+                <LikeDislike
+                  songId={song.id}
+                  userId={userId}
+                  likeEntry={myEntries.like}
+                  dislikeEntry={myEntries.dislike}
+                  onUpdate={loadMyEntries}
+                />
+                <button
+                  type="button"
+                  onClick={() => document.getElementById("review-section")?.scrollIntoView({ behavior: "smooth" })}
+                  className="inline-flex items-center justify-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors active:bg-muted"
+                >
+                  <Pencil size={12} />
+                  Review
+                </button>
+              </>
             )}
           </div>
         </div>
