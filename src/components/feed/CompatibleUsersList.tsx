@@ -327,10 +327,10 @@ export function CompatibleUsersList({
               Search for a song →
             </button>
           </>
-        ) : diaryCount < 5 ? (
+        ) : diaryCount < 3 ? (
           <>
             <p className="text-sm text-muted-foreground mb-2">
-              Almost there — {5 - diaryCount} more {5 - diaryCount === 1 ? "song" : "songs"} and we'll introduce you to people who share your taste.
+              Almost there — {3 - diaryCount} more {3 - diaryCount === 1 ? "song" : "songs"} and we'll introduce you to people who share your taste.
             </p>
             <button
               type="button"

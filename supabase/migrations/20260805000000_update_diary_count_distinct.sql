@@ -1,8 +1,7 @@
--- Migration: Add guardrail comments to compatibility functions
--- Prevents future maintainers from "simplifying" COUNT(DISTINCT) back to COUNT(*)
--- which would reintroduce the N×M cross-product inflation bug.
+-- Migration: Update get_compatible_users to count distinct songs instead of total entries
+-- Changes diaryCount threshold from COUNT(*) to COUNT(DISTINCT song_id)
+-- so logging heard+like on the same song only counts as 1, not 2
 
--- Guardrail for get_compatible_users
 CREATE OR REPLACE FUNCTION public.get_compatible_users(
   current_user_id UUID,
   sort_mode TEXT DEFAULT 'composite',
@@ -30,19 +29,6 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  /*
-   * ⚠️ GUARDRAIL: NEVER use bare COUNT(*) here.
-   *
-   * diary_entries allows multiple types per song per user
-   * (e.g., both 'heard' AND 'like' on the same song_id).
-   * The self-join ON song_id produces N×M rows per shared song.
-   * COUNT(*) counts JOIN rows, not distinct songs — use
-   * COUNT(DISTINCT song_id) for EVERY aggregate below.
-   *
-   * A user with heard+like on "Bohemian Rhapsody" matched
-   * against another user with heard on the same song produces
-   * 2×1=2 JOIN rows. COUNT(*) = 2, but the truth is 1 song.
-   */
   WITH shared AS (
     SELECT
       d2.user_id,
@@ -140,70 +126,11 @@ AS $$
   LEFT JOIN want w ON w.user_id = s.user_id
   LEFT JOIN top_artist ta ON ta.user_id = s.user_id
   ORDER BY
-    CASE
-      WHEN sort_mode = 'count' THEN s.shared_songs
-      ELSE NULL
-    END DESC NULLS LAST,
-    CASE
-      WHEN sort_mode = 'composite' THEN (
-        s.shared_heard * 1.0 +
-        s.shared_liked * 2.0 +
-        s.shared_reviewed * 3.0 +
-        s.shared_want * 1.5 +
-        s.shared_disliked * 0.5
-      )
-      ELSE NULL
-    END DESC NULLS LAST,
-    CASE
-      WHEN sort_mode = 'recent' THEN 0
-      ELSE NULL
-    END,
-    s.last_active_at DESC NULLS LAST
+    CASE WHEN sort_mode = 'count' THEN shared_songs END DESC NULLS LAST,
+    CASE WHEN sort_mode = 'recent' THEN last_active_at END DESC NULLS LAST,
+    shared_songs DESC NULLS LAST
   LIMIT 20
   OFFSET page_offset;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.get_compatible_users(UUID, TEXT, INT) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.get_compatible_users(UUID, TEXT, INT) TO service_role;
-
-
--- Guardrail for get_user_compatibility
-CREATE OR REPLACE FUNCTION get_user_compatibility(viewer_id UUID, target_id UUID)
-RETURNS TABLE(
-  shared_songs bigint,
-  shared_heard bigint,
-  shared_liked bigint,
-  shared_disliked bigint,
-  shared_reviewed bigint
-)
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  /*
-   * ⚠️ GUARDRAIL: NEVER use bare COUNT(*) here.
-   *
-   * diary_entries allows multiple types per song per user.
-   * The self-join ON song_id produces N×M rows per shared song.
-   * The overlapping CTE uses SELECT DISTINCT song_id, type to
-   * deduplicate BEFORE counting. Do NOT remove DISTINCT from the
-   * CTE or switch to COUNT(*) without DISTINCT on song_id.
-   */
-  WITH overlapping AS (
-    SELECT DISTINCT d2.song_id, d2.type
-    FROM diary_entries d1
-    JOIN diary_entries d2 ON d2.song_id = d1.song_id
-    WHERE d1.user_id = viewer_id
-      AND d2.user_id = target_id
-  )
-  SELECT
-    COUNT(DISTINCT song_id)::bigint AS shared_songs,
-    COUNT(*) FILTER (WHERE type = 'heard')::bigint AS shared_heard,
-    COUNT(*) FILTER (WHERE type = 'like')::bigint AS shared_liked,
-    COUNT(*) FILTER (WHERE type = 'dislike')::bigint AS shared_disliked,
-    COUNT(*) FILTER (WHERE type = 'review')::bigint AS shared_reviewed
-  FROM overlapping;
-$$;
-
-GRANT EXECUTE ON FUNCTION get_user_compatibility(UUID, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_compatible_users(UUID, TEXT, INT) TO authenticated, anon, service_role;
