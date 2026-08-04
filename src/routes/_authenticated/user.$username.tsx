@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { PublicProfile } from "@/components/profile/PublicProfile";
+import { BackHeader } from "@/components/nav/BackHeader";
 
 export const Route = createFileRoute("/_authenticated/user/$username")({
   ssr: false,
@@ -10,6 +11,7 @@ export const Route = createFileRoute("/_authenticated/user/$username")({
 
 function UserProfilePage() {
   const { username } = Route.useParams();
+  const router = useRouter();
   const [viewerId, setViewerId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -18,5 +20,10 @@ function UserProfilePage() {
     });
   }, []);
 
-  return <PublicProfile username={username} viewerId={viewerId} />;
+  return (
+    <>
+      <BackHeader label="Back" onBack={() => router.history.back()} solid />
+      <PublicProfile username={username} viewerId={viewerId} />
+    </>
+  );
 }
