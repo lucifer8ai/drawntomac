@@ -179,8 +179,8 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
   return (
     <>
       <div className="flex flex-col mx-auto max-w-6xl w-full" style={{ minHeight: "calc(100vh - 57px)" }}>
-        {/* Back link — visible on mobile, hidden on desktop (AppHeader handles desktop) */}
-        <div className="block md:hidden px-4 py-3">
+        {/* Back link — always visible since profiles open full-screen */}
+        <div className="px-4 py-3">
           <button
             type="button"
             onClick={() => window.history.back()}
