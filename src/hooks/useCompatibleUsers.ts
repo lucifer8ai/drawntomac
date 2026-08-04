@@ -116,6 +116,39 @@ export function useCompatibleUsers(
 
       const filtered = mapped.filter((u) => u.userId);
 
+      // Fallback: if user has 3+ songs but no taste matches, show all profiles
+      if (filtered.length === 0 && Number(diaryTotal) >= 3 && page === 0) {
+        const { data: allProfiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, username, display_name, avatar_url")
+          .neq("id", userId)
+          .not("username", "is", null)
+          .limit(20);
+
+        if (!profilesError && allProfiles) {
+          const fallback: CompatibleUser[] = allProfiles.map((p) => ({
+            userId: p.id,
+            username: p.username,
+            displayName: p.display_name,
+            avatarUrl: p.avatar_url,
+            sharedSongs: 0,
+            sharedHeard: 0,
+            sharedLiked: 0,
+            sharedDisliked: 0,
+            sharedWant: 0,
+            sharedReviewed: 0,
+            likedSongs: [],
+            wantSongs: [],
+            lastActiveAt: null,
+            topSharedArtist: null,
+          }));
+          setUsers(fallback);
+          setHasMore(fallback.length === 20);
+          setLoading(false);
+          return;
+        }
+      }
+
       if (page === 0) {
         setUsers(filtered);
         cacheRef.current = { fetchedAt: Date.now(), data: filtered, userId, sortMode };
