@@ -35,17 +35,18 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
 
   function validateUsername(val: string): string | null {
     if (val.length > 0 && val.length < 3) return "Username must be at least 3 characters.";
-    if (val.length > 30) return "Username must be at most 30 characters.";
+    if (val.length > 20) return "Username must be at most 20 characters.";
     if (val.length > 0 && !USERNAME_RE.test(val)) return "Only letters, numbers, and underscores.";
     return null;
   }
 
   function handleUsernameChange(val: string) {
-    setUsername(val);
-    const err = validateUsername(val);
+    const lowered = val.toLowerCase();
+    setUsername(lowered);
+    const err = validateUsername(lowered);
     setUsernameError(err);
-    if (!err && val.length >= 3) {
-      checkUsernameAvailable(val);
+    if (!err && lowered.length >= 3) {
+      checkUsernameAvailable(lowered);
     }
   }
 
