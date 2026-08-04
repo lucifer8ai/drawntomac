@@ -131,11 +131,6 @@ export function DiscoverPage() {
             currentUserId={userId}
           />
           {allUsers.length > 0 && (
-            <div className="mt-2 text-xs text-muted-foreground">
-              You share tastes with {allUsers.length} {allUsers.length === 1 ? "listener" : "listeners"}.
-            </div>
-          )}
-          {allUsers.length > 0 && (
             <div className="mt-6">
               <ConnectingSongsSection
                 songs={connectingSongs.songs}
