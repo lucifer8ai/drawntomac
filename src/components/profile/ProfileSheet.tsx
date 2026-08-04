@@ -9,7 +9,7 @@ import { AccountSettings } from "./AccountSettings";
 import { ProfileStatsRow } from "./ProfileStatsRow";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileStats } from "@/hooks/useProfileStats";
-import { LogOut, Pencil, ExternalLink } from "lucide-react";
+import { LogOut, Pencil, ExternalLink, ArrowLeft } from "lucide-react";
 
 interface ProfileSheetProps {
   open: boolean;
@@ -59,6 +59,16 @@ export function ProfileSheet({ open, onClose, onProfileUpdate }: ProfileSheetPro
           side="right"
           className="w-full sm:max-w-sm p-0"
         >
+          {/* Back button — visible at all times */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-black/50 border border-white/10 backdrop-blur-md text-sm font-medium text-white active:bg-black/70"
+          >
+            <ArrowLeft size={16} />
+            Back
+          </button>
+
           {loading && !profile ? (
             <div className="flex items-center justify-center py-20">
               <div className="text-sm text-muted-foreground">Loading...</div>
