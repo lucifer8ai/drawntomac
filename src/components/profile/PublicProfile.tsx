@@ -179,6 +179,16 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
   return (
     <>
       <div className="flex flex-col mx-auto max-w-6xl w-full" style={{ minHeight: "calc(100vh - 57px)" }}>
+        {/* Back link — visible on mobile, hidden on desktop (AppHeader handles desktop) */}
+        <div className="block md:hidden px-4 py-3">
+          <button
+            type="button"
+            onClick={() => window.history.back()}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-sm font-medium text-white transition-colors active:bg-black/60"
+          >
+            ← Back
+          </button>
+        </div>
         {/* Banner */}
         <div className="relative w-full aspect-[16/9] md:aspect-[3/1] bg-black overflow-hidden">
           {profile.banner_url ? (
