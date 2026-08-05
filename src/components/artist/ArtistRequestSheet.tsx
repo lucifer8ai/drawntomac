@@ -9,6 +9,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 export function ArtistRequestSheet() {
   const [open, setOpen] = useState(false);
@@ -32,9 +33,14 @@ export function ArtistRequestSheet() {
     if (!names.length) return;
 
     setSubmitting(true);
+    const { data: session } = await supabase.auth.getSession();
+    const token = session?.session?.access_token;
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
     const res = await fetch("/api/artist-requests", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ artists: names }),
     });
     const data = await res.json();
