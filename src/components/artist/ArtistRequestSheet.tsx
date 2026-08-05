@@ -60,7 +60,8 @@ export function ArtistRequestSheet() {
       <DialogTrigger asChild>
         <button
           type="button"
-          className="artist-request-btn rounded-full p-2 text-muted-foreground hover:text-foreground transition-colors bg-background"
+          className="rounded-full p-2 text-muted-foreground transition-colors bg-background"
+          style={{ color: "var(--color-want)" }}
           aria-label="Request an artist"
         >
           <Plus size={20} />
