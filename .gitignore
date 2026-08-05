@@ -31,3 +31,4 @@ coverage/
 
 # Local Supabase (if using local dev)
 supabase/.temp/
+.vercel/
