@@ -138,8 +138,7 @@ function OnboardingPage() {
           <div key="step-1" className="animate-fade-in-up">
             <ArtistSelector
               selectedArtistIds={selectedArtists}
-              max={3}
-              requireExact={true}
+              min={3}
               onConfirm={handleArtistConfirm}
             />
           </div>

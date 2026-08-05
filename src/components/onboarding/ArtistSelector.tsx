@@ -13,10 +13,11 @@ interface ArtistSelectorProps {
   selectedArtistIds: string[];
   onConfirm: (ids: string[]) => void;
   max?: number;
+  min?: number;
   requireExact?: boolean;
 }
 
-export function ArtistSelector({ selectedArtistIds: initialSelected, onConfirm, max = 3, requireExact = false }: ArtistSelectorProps) {
+export function ArtistSelector({ selectedArtistIds: initialSelected, onConfirm, max = 999, min = 0, requireExact = false }: ArtistSelectorProps) {
   const [artists, setArtists] = useState<OnboardingArtist[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,21 +52,22 @@ export function ArtistSelector({ selectedArtistIds: initialSelected, onConfirm, 
     });
   }, [max]);
 
-  const isMax = selected.length >= max;
+  const isMax = max > 0 && max < 999 && selected.length >= max;
+  const canContinue = selected.length >= min;
 
   if (loading) {
     return (
       <div className="space-y-4">
         <div className="space-y-2">
           <h2 className="text-[28px] font-bold text-foreground" style={{ fontFamily: "DM Sans, sans-serif" }}>
-            {requireExact ? `Pick ${max} artists you listen to.` : `Pick up to ${max} artists you listen to.`}
+            {requireExact ? `Pick ${max} artists you listen to.` : min > 0 ? `Pick at least ${min} artists you listen to.` : `Pick artists you listen to.`}
           </h2>
           <p className="text-base text-muted-foreground">
             We'll curate your feed based on your taste.
           </p>
         </div>
         <div className="text-right text-sm text-muted-foreground">
-          {selected.length} of {max} selected
+          {selected.length} selected
         </div>
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="flex items-center gap-3 h-10 rounded-lg border border-border px-4 animate-pulse">
@@ -96,7 +98,7 @@ export function ArtistSelector({ selectedArtistIds: initialSelected, onConfirm, 
     <div className="space-y-4 rounded-2xl border border-border/50 bg-raised/50 p-6 backdrop-blur-sm">
       <div className="space-y-2">
         <h2 className="text-[28px] font-bold text-foreground" style={{ fontFamily: "DM Sans, sans-serif" }}>
-          {requireExact ? `Pick ${max} artists you listen to.` : `Pick up to ${max} artists you listen to.`}
+          {requireExact ? `Pick ${max} artists you listen to.` : min > 0 ? `Pick at least ${min} artists you listen to.` : `Pick artists you listen to.`}
         </h2>
         <p className="text-base text-muted-foreground">
           We'll curate your feed based on your taste.
@@ -104,7 +106,7 @@ export function ArtistSelector({ selectedArtistIds: initialSelected, onConfirm, 
       </div>
 
       <div className="text-right text-sm text-muted-foreground">
-        {selected.length} of {max} selected
+        {selected.length} selected
       </div>
 
       <div className="space-y-1 max-h-[420px] overflow-y-auto">
@@ -168,17 +170,17 @@ export function ArtistSelector({ selectedArtistIds: initialSelected, onConfirm, 
       <button
         type="button"
         onClick={() => {
-          if (requireExact ? selected.length === max : selected.length > 0) {
+          if (canContinue) {
             onConfirm(selected);
           }
         }}
-        disabled={requireExact ? selected.length < max : selected.length === 0}
+        disabled={!canContinue}
         className={`w-full min-h-[44px] rounded-lg font-semibold text-sm transition-all ease-out duration-200 ${
-          (requireExact ? selected.length === max : selected.length > 0)
+          canContinue
             ? "bg-primary text-primary-foreground scale-[1.02]"
             : "bg-primary/8 text-muted-foreground border border-border cursor-not-allowed"
         }`}
-        aria-disabled={requireExact ? selected.length < max : selected.length === 0}
+        aria-disabled={!canContinue}
       >
         Continue
       </button>
