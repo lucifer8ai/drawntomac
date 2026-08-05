@@ -299,6 +299,8 @@ export function AppHeader({
           )}
         </div>
 
+        <ArtistRequestSheet />
+
         <button
           type="button"
           onClick={onProfileClick}
@@ -316,8 +318,6 @@ export function AppHeader({
             (displayName ?? "U").slice(0, 1).toUpperCase()
           )}
         </button>
-
-        <ArtistRequestSheet />
       </div>
 
       <nav className="mx-auto hidden md:flex max-w-6xl items-center gap-6 px-4">
