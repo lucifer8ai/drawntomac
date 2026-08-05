@@ -23,7 +23,7 @@ export function CoverArt({
   previewUrl: string | null;
 }) {
   return (
-    <div className="mx-auto w-full max-w-[240px] md:max-w-[320px] md:mx-0">
+    <div className="mx-auto w-full max-w-[240px] md:max-w-[320px] md:mx-0 mobile-art-detail">
       <div
         className="aspect-square w-full overflow-hidden rounded-2xl border bg-raised"
       >

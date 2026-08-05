@@ -325,7 +325,7 @@ function SongPage() {
           badges={shareBadges}
         />
       </div>
-      <main className="mx-auto max-w-5xl px-4 py-8 pb-[80px] md:pb-8">
+      <main className="mx-auto max-w-5xl px-4 py-8 pb-[152px] md:pb-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-[320px_1fr]">
           <CoverArt
             url={artworkUrl}

@@ -227,10 +227,10 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
 
           {/* Name block */}
           <div className="pt-2 space-y-1">
-            <div className="text-lg md:text-xl font-bold">
+            <div className="text-lg md:text-xl font-bold truncate">
               {resolvedName}
             </div>
-            <div className="text-sm md:text-base text-muted-foreground">
+            <div className="text-sm md:text-base text-muted-foreground truncate">
               @{profile.username}
             </div>
             {profile.pronouns && (

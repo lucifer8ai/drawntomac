@@ -54,8 +54,6 @@ interface UserCardProps {
   isFollowing: boolean;
   isFollowLoading: boolean;
   onToggleFollow: (userId: string) => void;
-  isHero?: boolean;
-  className?: string;
 }
 
 const UserCard = memo(function UserCard({
@@ -65,8 +63,6 @@ const UserCard = memo(function UserCard({
   isFollowing,
   isFollowLoading,
   onToggleFollow,
-  isHero = false,
-  className,
 }: UserCardProps) {
   const score = computeCompatibilityScore(user);
   const tier = getCompatibilityTier(score, maxScore);
@@ -83,20 +79,15 @@ const UserCard = memo(function UserCard({
 
   const isOwnCard = currentUserId === user.userId;
   const displayName = user.displayName ?? user.username;
-  const avatarSize = isHero ? "h-14 w-14" : "h-10 w-10";
 
   return (
     <Link
       to="/user/$username"
       params={{ username: user.username }}
-      className={cn(
-        "block rounded-2xl border bg-raised transition-colors hover:border-foreground/12",
-        isHero ? "p-4" : "p-3",
-        className,
-      )}
+      className="block rounded-2xl border bg-raised p-3 transition-colors hover:border-foreground/12"
     >
       <div className="flex items-start gap-3">
-        <Avatar className={cn(avatarSize, "flex-shrink-0")}>
+        <Avatar className="h-12 w-12 flex-shrink-0">
           {user.avatarUrl ? (
             <AvatarImage src={user.avatarUrl} alt={`${displayName} avatar`} />
           ) : null}
@@ -107,7 +98,7 @@ const UserCard = memo(function UserCard({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className={cn("truncate font-semibold text-foreground", isHero ? "text-base" : "text-sm")}>
+            <span className="truncate text-sm font-semibold text-foreground">
               {displayName}
             </span>
             {tier && (
@@ -351,8 +342,8 @@ export function CompatibleUsersList({
 
   return (
     <div>
-      <div className="md:grid gap-2 space-y-2 md:space-y-0 md:[grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
-        {users.map((user, i) => (
+      <div className="space-y-2">
+        {users.map((user) => (
           <UserCard
             key={user.userId}
             user={user}
@@ -361,8 +352,6 @@ export function CompatibleUsersList({
             isFollowing={followState[user.userId] ?? false}
             isFollowLoading={followLoading[user.userId] ?? false}
             onToggleFollow={onToggleFollowRef.current}
-            isHero={i === 0}
-            className={i === 0 ? "md:col-span-full" : undefined}
           />
         ))}
       </div>

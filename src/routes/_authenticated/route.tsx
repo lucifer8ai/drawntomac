@@ -99,7 +99,9 @@ function AuthenticatedLayout() {
           onProfileClick={() => setProfileOpen(true)}
           triggerSearch={searchTrigger}
         />
-        <Outlet />
+        <div className="pb-20 pb-safe">
+          <Outlet />
+        </div>
         <BottomNav activeTab={tab} onTabChange={handleTabChange} />
         <ProfileSheet
           open={profileOpen}

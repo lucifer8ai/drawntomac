@@ -55,7 +55,14 @@ export function AvatarStack({ users, maxVisible = 4 }: AvatarStackProps) {
         )}
       </div>
       <span className="ml-2 text-sm md:text-base text-foreground">
-        {users.map((u) => u.displayName ?? u.username).join(", ")}
+        <span className="md:hidden">
+          {users.length <= 2
+            ? users.map((u) => u.displayName ?? u.username).join(", ")
+            : `${users[0].displayName ?? users[0].username}, ${users[1].displayName ?? users[1].username} +${users.length - 2} more`}
+        </span>
+        <span className="hidden md:inline">
+          {users.map((u) => u.displayName ?? u.username).join(", ")}
+        </span>
       </span>
     </div>
   );

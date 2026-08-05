@@ -109,7 +109,7 @@ export function ReviewComposer({
   if (mode === "collapsed") {
     return (
       <div className="mt-8">
-        <Button type="button" variant="raised" shape="pill" onClick={() => setMode(canEdit ? "viewing" : "locked")}>
+        <Button type="button" variant="raised" shape="pill" className="min-h-[44px]" onClick={() => setMode(canEdit ? "viewing" : "locked")}>
           <Eye size={14} />
           See your review
         </Button>
@@ -147,14 +147,14 @@ export function ReviewComposer({
         <p className="whitespace-pre-wrap text-base text-foreground/90">{entry.body}</p>
       )}
       <div className="mt-3 flex items-center gap-3">
-        <Button type="button" shape="pill" size="sm" onClick={() => setMode("write")}>
+        <Button type="button" shape="pill" className="min-h-[44px]" onClick={() => setMode("write")}>
           <Pencil size={14} />
           Edit
         </Button>
         <button
           type="button"
           onClick={() => setMode("collapsed")}
-          className="text-xs font-semibold text-muted-foreground"
+          className="text-xs font-semibold text-muted-foreground min-h-[44px] px-2"
         >
           Collapse
         </button>

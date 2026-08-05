@@ -28,7 +28,7 @@ function SocialFeedSection() {
       const scrollPos = window.innerHeight + window.scrollY;
       const pageHeight = document.documentElement.scrollHeight;
       if (pageHeight < window.innerHeight * 1.5) return;
-      if (scrollPos >= pageHeight * 0.8) {
+      if (scrollPos >= pageHeight - 200) {
         loadMore();
       }
     }

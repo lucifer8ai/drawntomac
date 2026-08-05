@@ -61,15 +61,19 @@ export function EntryCard({ data }: { data: EntryCardData }) {
         <Link
           to="/user/$username"
           params={{ username: data.username }}
-          className="flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-bold text-primary-foreground hover:opacity-80 transition-opacity"
-          style={{ backgroundColor: data.avatarUrl ? "transparent" : "var(--color-primary)" }}
+          className="flex items-center justify-center min-h-[44px] min-w-[44px] flex-shrink-0"
           onClick={(e) => e.stopPropagation()}
         >
-          {data.avatarUrl ? (
-            <img src={data.avatarUrl} alt={`${name} avatar`} className="h-full w-full object-cover" loading="lazy" />
-          ) : (
-            initial
-          )}
+          <div
+            className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full text-xs font-bold text-primary-foreground"
+            style={{ backgroundColor: data.avatarUrl ? "transparent" : "var(--color-primary)" }}
+          >
+            {data.avatarUrl ? (
+              <img src={data.avatarUrl} alt={`${name} avatar`} className="h-full w-full object-cover" loading="lazy" />
+            ) : (
+              initial
+            )}
+          </div>
         </Link>
 
         <div className="min-w-0 flex-1">
