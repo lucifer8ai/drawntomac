@@ -6,3 +6,4 @@
 - Split risky or independently-shippable features into separate PRs rather than bundling everything into one deployment — prefer smaller, safer ships. Confidence: 0.70
 - When reviewing plans: cross-reference plan proposals against the actual codebase — read source files to verify assumptions rather than reviewing the plan in isolation. Plans that look correct on paper often contain hidden gaps revealed only by comparing against real code. Confidence: 0.70
 - When reviewing plans, verify the fix doesn't alter overall site architecture — prefer minimal, targeted changes that preserve existing structural patterns rather than introducing new abstractions or type contracts that reshape how components communicate. Confidence: 0.75
+- Test UI changes on localhost before committing — don't push and rely on Vercel deploy previews. Verify the changes work visually before they hit the branch. Confidence: 0.70

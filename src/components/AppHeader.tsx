@@ -3,6 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { toast } from "sonner";
 import type { SearchHit, CategorizedResults } from "@/routes/api/search";
+import { ArtistRequestSheet } from "@/components/artist/ArtistRequestSheet";
 
 type Tab = "feed" | "diary" | "discover";
 
@@ -315,6 +316,8 @@ export function AppHeader({
             (displayName ?? "U").slice(0, 1).toUpperCase()
           )}
         </button>
+
+        <ArtistRequestSheet />
       </div>
 
       <nav className="mx-auto hidden md:flex max-w-6xl items-center gap-6 px-4">

@@ -240,3 +240,27 @@
 .animate-slide-down-fade {
   animation: slide-down-fade 300ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
+
+.artist-request-btn {
+  position: relative;
+}
+.artist-request-btn::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--color-like),
+    var(--color-heard),
+    var(--color-save),
+    var(--color-want),
+    var(--color-like)
+  );
+  opacity: 0;
+  transition: opacity 200ms ease;
+  z-index: -1;
+}
+.artist-request-btn:hover::before,
+.artist-request-btn:focus-visible::before {
+  opacity: 1;
+}

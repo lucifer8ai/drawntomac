@@ -31,9 +31,11 @@ See [ux/taste.md](ux/taste.md)
 
 # security
 - Never disclose or commit .env files — they contain sensitive API keys and secrets. Ensure .env is in .gitignore and never output its contents. Confidence: 0.80
+- Always keep `.vercel/` in `.gitignore` — the `.vercel/output/` directory contains build artifacts with embedded Supabase keys and other secrets that trigger VS Code's secret scanner. Confidence: 0.75
 
 # supabase
 - Use two-phase migrations when adding new values to diary_entries.type CHECK constraint: Phase 1 adds new types (backward-compatible, keeps old ones), Phase 2 removes old types after code deploys. Confidence: 0.65
+- The migration deployer (`scripts/deploy-migrations.ts`) only runs new migration files — edits to existing migrations are not redeployed. To update an already-deployed function or schema, create a new migration file with a fresh timestamp. Confidence: 0.70
 
 # architecture
 See [architecture/taste.md](architecture/taste.md)

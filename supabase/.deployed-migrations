@@ -52,3 +52,4 @@
 20260729000004_add_admin_role.sql
 20260729000005_add_admin_audit_log.sql
 20260805000000_update_diary_count_distinct.sql
+20260814000000_add_artist_requests.sql
