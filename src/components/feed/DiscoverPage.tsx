@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useTabContext } from "@/routes/_authenticated/route";
 import { useTrendingSongs } from "@/hooks/useTrendingSongs";
-import { useCompatibleUsers, type SortMode, type CompatibleUser } from "@/hooks/useCompatibleUsers";
+import { useCompatibleUsers, type SortMode } from "@/hooks/useCompatibleUsers";
 import { useConnectingSongs } from "@/hooks/useConnectingSongs";
 import { useTopMovers } from "@/hooks/useTopMovers";
 import { useTrendingSocialProof } from "@/hooks/useTrendingSocialProof";
@@ -19,7 +19,6 @@ export function DiscoverPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [compatSort, setCompatSort] = useState<SortMode>("composite");
   const [compatPage, setCompatPage] = useState(0);
-  const [allUsers, setAllUsers] = useState<CompatibleUser[]>([]);
   const [trendingWindow, setTrendingWindow] = useState<number>(30);
 
   const trending = useTrendingSongs(trendingWindow);
@@ -29,24 +28,18 @@ export function DiscoverPage() {
   const { socialProof } = useTrendingSocialProof(userId, trending.songs.map((s) => s.id));
   const { interactions: userInteractions } = useDiaryInteractions(userId, trending.songs.map((s) => s.id));
 
+  const allUsers = compatibleUsers.users;
+  const maxScore = allUsers.length > 0 ? Math.max(...allUsers.map((u) => computeCompatibilityScore(u))) : 0;
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id ?? null);
     });
   }, []);
 
-  useEffect(() => {
-    if (compatPage === 0) {
-      setAllUsers(compatibleUsers.users);
-    } else {
-      setAllUsers((prev) => [...prev, ...compatibleUsers.users]);
-    }
-  }, [compatibleUsers.users, compatPage]);
-
   // ── END AUTH ──
 
   const isAnonymous = userId === null;
-  const maxScore = allUsers.length > 0 ? Math.max(...allUsers.map((u) => computeCompatibilityScore(u))) : 0;
 
   return (
     <div className="mx-auto max-w-full px-2 md:max-w-4xl md:px-4 py-4 pb-20">
