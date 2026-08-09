@@ -4,13 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTabContext } from "@/routes/_authenticated/route";
 import { useTrendingSongs } from "@/hooks/useTrendingSongs";
 import { useCompatibleUsers, type SortMode } from "@/hooks/useCompatibleUsers";
-import { useConnectingSongs } from "@/hooks/useConnectingSongs";
 import { useTopMovers } from "@/hooks/useTopMovers";
 import { useTrendingSocialProof } from "@/hooks/useTrendingSocialProof";
 import { useDiaryInteractions } from "@/hooks/useDiaryInteractions";
 import { TrendingList } from "@/components/feed/TrendingList";
 import { CompatibleUsersList } from "@/components/feed/CompatibleUsersList";
-import { ConnectingSongsSection } from "@/components/feed/ConnectingSongsSection";
 import { TopMoversStrip } from "@/components/feed/TopMoversStrip";
 import { computeCompatibilityScore } from "@/utils/compatibility";
 
@@ -23,7 +21,6 @@ export function DiscoverPage() {
 
   const trending = useTrendingSongs(trendingWindow);
   const compatibleUsers = useCompatibleUsers(userId, compatSort, compatPage);
-  const connectingSongs = useConnectingSongs(userId);
   const topMovers = useTopMovers();
   const { socialProof } = useTrendingSocialProof(userId, trending.songs.map((s) => s.id));
   const { interactions: userInteractions } = useDiaryInteractions(userId, trending.songs.map((s) => s.id));
@@ -123,14 +120,6 @@ export function DiscoverPage() {
             onSearch={triggerSearch}
             currentUserId={userId}
           />
-          {allUsers.length > 0 && (
-            <div className="mt-6">
-              <ConnectingSongsSection
-                songs={connectingSongs.songs}
-                loading={connectingSongs.loading}
-              />
-            </div>
-          )}
         </section>
       )}
 
