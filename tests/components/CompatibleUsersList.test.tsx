@@ -152,11 +152,11 @@ describe("CompatibleUsersList", () => {
 
   // ── User card rendering ──
 
-  it("renders user display name in card", () => {
+  it("renders username in card (primary over displayName)", () => {
     render(
       <CompatibleUsersList {...defaultProps} users={[baseUser]} maxScore={10} />,
     );
-    expect(screen.getByText("Alice")).toBeTruthy();
+    expect(screen.getByText("alice")).toBeTruthy();
   });
 
   it("falls back to username when no display name", () => {
@@ -538,7 +538,7 @@ describe("CompatibleUsersList", () => {
     render(
       <CompatibleUsersList {...defaultProps} users={[baseUser]} maxScore={10} />,
     );
-    expect(screen.getByText("Alice")).toBeTruthy();
+    expect(screen.getByText("alice")).toBeTruthy();
   });
 
   it("renders with empty users but not empty state (loading overlay)", () => {
@@ -553,7 +553,7 @@ describe("CompatibleUsersList", () => {
     render(
       <CompatibleUsersList {...defaultProps} users={[baseUser, user2]} maxScore={10} />,
     );
-    expect(screen.getByText("Alice")).toBeTruthy();
-    expect(screen.getByText("Bob")).toBeTruthy();
+    expect(screen.getByText("alice")).toBeTruthy();
+    expect(screen.getByText("bob")).toBeTruthy();
   });
 });

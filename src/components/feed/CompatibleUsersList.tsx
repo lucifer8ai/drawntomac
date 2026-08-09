@@ -78,7 +78,7 @@ const UserCard = memo(function UserCard({
   const wantPct = total > 0 ? (user.sharedWant / total) * 100 : 0;
 
   const isOwnCard = currentUserId === user.userId;
-  const displayName = user.displayName ?? user.username;
+  const resolvedName = user.username || user.displayName || "Unknown";
 
   return (
     <Link
@@ -89,17 +89,17 @@ const UserCard = memo(function UserCard({
       <div className="flex items-start gap-3">
         <Avatar className="h-12 w-12 flex-shrink-0">
           {user.avatarUrl ? (
-            <AvatarImage src={user.avatarUrl} alt={`${displayName} avatar`} />
+            <AvatarImage src={user.avatarUrl} alt={`${resolvedName} avatar`} />
           ) : null}
           <AvatarFallback className="text-sm font-bold">
-            {displayName[0]?.toUpperCase()}
+            {resolvedName[0]?.toUpperCase()}
           </AvatarFallback>
         </Avatar>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="truncate text-sm font-semibold text-foreground">
-              {displayName}
+              {resolvedName}
             </span>
             {tier && (
               <span
