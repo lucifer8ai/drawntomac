@@ -1,7 +1,8 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { DetailShell } from "@/components/layout/DetailShell";
 import { slugifyBase } from "@/lib/slugify";
+import { resolveBackURL } from "@/lib/navigation";
 
 type AlbumSong = {
   id: string;
@@ -87,6 +88,10 @@ export const Route = createFileRoute("/album/$slug")({
 
 function AlbumPage() {
   const { album, songs, fallbackArtwork } = Route.useLoaderData() as LoaderData;
+  const router = useRouter();
+  const search = router.state.location.search as Record<string, unknown>;
+  const from = search.from as string | undefined;
+  const fromSlug = search.fromSlug as string | undefined;
   const year = album.release_date
     ? new Date(album.release_date).getFullYear()
     : null;
@@ -94,7 +99,7 @@ function AlbumPage() {
   const artworkUrl = album.image_url ?? fallbackArtwork;
 
   return (
-    <DetailShell>
+    <DetailShell backTo={resolveBackURL(from, fromSlug)}>
       <main className="mx-auto max-w-5xl px-4 py-8">
         <div className="md:grid md:grid-cols-[320px_1fr] md:gap-8">
           <div className="mb-6 md:mb-0">
@@ -134,6 +139,7 @@ function AlbumPage() {
               <Link
                 to="/artist/$slug"
                 params={{ slug: album.artist.slug }}
+                search={{ from: "album", fromSlug: album.slug }}
                 className="mt-1 text-sm md:text-lg text-foreground/70 hover:text-foreground transition-colors"
               >
                 by {album.artist.name}
@@ -163,6 +169,7 @@ function AlbumPage() {
                     <Link
                       to="/song/$slug"
                       params={{ slug: song.slug }}
+                      search={{ from: "album", fromSlug: album.slug }}
                       className="text-sm font-medium text-foreground hover:opacity-80 transition-opacity truncate"
                     >
                       {song.title}

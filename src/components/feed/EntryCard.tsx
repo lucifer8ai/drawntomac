@@ -55,6 +55,7 @@ export function EntryCard({ data }: { data: EntryCardData }) {
     <Link
       to="/song/$slug"
       params={{ slug: data.songSlug }}
+      search={{ from: "feed" }}
       className="block transition-colors hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
     >
       <div className="flex gap-2 md:gap-3 border-b px-4 py-2.5 md:py-3" style={{ borderColor: "var(--color-border)" }}>

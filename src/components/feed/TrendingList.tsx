@@ -144,6 +144,7 @@ export function TrendingList({
               key={song.id}
               to="/song/$slug"
               params={{ slug: song.slug }}
+              search={{ from: "discover" }}
               className="flex items-start gap-3 rounded-xl border bg-raised p-3 transition-colors hover:border-foreground/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <div className="relative flex-shrink-0">

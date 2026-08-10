@@ -47,7 +47,9 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedLayout() {
-  const [tab, setTab] = useState<Tab>("feed");
+  const router = useRouter();
+  const tabFromUrl = (router.state.location.search as { tab?: string })?.tab as Tab | undefined;
+  const [tab, setTab] = useState<Tab>(tabFromUrl ?? "feed");
   const [discoverSection, setDiscoverSection] = useState<DiscoverSection>("trending");
   const [searchTrigger, setSearchTrigger] = useState(0);
   const [profile, setProfile] = useState<{
@@ -57,7 +59,6 @@ function AuthenticatedLayout() {
   } | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const navigate = useNavigate();
-  const router = useRouter();
 
   const handleTabChange = (t: Tab) => {
     setTab(t);

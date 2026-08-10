@@ -1,8 +1,9 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ArtistHero, ArtistHeader, DiscographyFeed } from "@/components/artist";
 import { slugifyBase } from "@/lib/slugify";
+import { resolveBackURL } from "@/lib/navigation";
 
 type DiscographySong = {
   id: string;
@@ -21,7 +22,8 @@ type LoaderData = {
   discography: DiscographySong[];
 };
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, from, fromSlug }: { children: React.ReactNode; from?: string; fromSlug?: string }) {
+  const backURL = resolveBackURL(from, fromSlug);
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur-xl">
@@ -29,7 +31,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           <Link to="/home" className="text-2xl font-black tracking-tight text-foreground">
             #d.To
           </Link>
-          <Link to="/home" className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+          <Link {...backURL} className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
             <ArrowLeft size={16} />
             Back
           </Link>
@@ -88,11 +90,15 @@ export const Route = createFileRoute("/artist/$slug")({
 
 function ArtistPage() {
   const { artist, discography } = Route.useLoaderData() as LoaderData;
+  const router = useRouter();
+  const search = router.state.location.search as Record<string, unknown>;
+  const from = search.from as string | undefined;
+  const fromSlug = search.fromSlug as string | undefined;
   const leadCount = discography.filter((s) => s.role === "lead").length;
   const featuredCount = discography.filter((s) => s.role === "featured").length;
 
   return (
-    <Shell>
+    <Shell from={from} fromSlug={fromSlug}>
       <ArtistHero imageUrl={artist.image_url}>
         <ArtistHeader
           name={artist.name}
@@ -104,7 +110,7 @@ function ArtistPage() {
         {discography.length === 0 ? (
           <p className="text-center text-muted-foreground py-12">No songs found for this artist.</p>
         ) : (
-          <DiscographyFeed songs={discography} />
+          <DiscographyFeed songs={discography} from={from} fromSlug={fromSlug} />
         )}
       </main>
     </Shell>

@@ -5,16 +5,21 @@ export function SongCard({
   slug,
   imageUrl,
   subtitle,
+  from,
+  fromSlug,
 }: {
   title: string;
   slug: string;
   imageUrl: string | null;
   subtitle?: string;
+  from?: string;
+  fromSlug?: string;
 }) {
   return (
     <Link
       to="/song/$slug"
       params={{ slug }}
+      search={from ? { from, fromSlug } : undefined}
       className="block rounded-2xl border bg-raised overflow-hidden transition-colors hover:border-foreground/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {imageUrl ? (

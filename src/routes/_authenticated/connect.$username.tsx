@@ -105,6 +105,7 @@ function ConnectPage() {
               key={song.songId}
               to="/song/$slug"
               params={{ slug: song.slug }}
+              search={{ from: "discover" }}
               className="flex items-center gap-2 py-3 px-4 hover:bg-white/[0.03] rounded-lg transition-colors duration-150 min-h-[44px]"
             >
               <span className="text-base font-semibold text-foreground truncate">

@@ -25,6 +25,7 @@ export function TopMoversStrip({ songs, loading, error }: TopMoversStripProps) {
             key={song.id}
             to="/song/$slug"
             params={{ slug: song.slug }}
+            search={{ from: "discover" }}
             className="flex-shrink-0 w-[140px] rounded-xl border bg-raised p-2 transition-colors hover:border-foreground/12"
           >
             {song.albumArtUrl ? (

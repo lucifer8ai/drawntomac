@@ -16,14 +16,18 @@ vi.mock("@tanstack/react-router", () => ({
     state.RouteComponent = routeConfig.component;
     return { useLoaderData: () => state.routeMockData };
   },
-  Link: ({ to, params, children, className }: any) => {
+  Link: ({ to, params, search, children, className }: any) => {
     const href = to.replace("$slug", params?.slug ?? "");
+    const searchStr = search ? `?${new URLSearchParams(search as any).toString()}` : "";
     return (
-      <a href={href} className={className}>
+      <a href={`${href}${searchStr}`} className={className}>
         {children}
       </a>
     );
   },
+  useRouter: () => ({
+    state: { location: { search: {} } },
+  }),
   notFound: () => {
     throw new Error("NOT_FOUND");
   },
@@ -208,6 +212,6 @@ describe("album.$slug", () => {
     };
     renderAlbumPage();
     const link = screen.getByText("by My Artist");
-    expect(link.closest("a")?.getAttribute("href")).toBe("/artist/my-artist");
+    expect(link.closest("a")?.getAttribute("href")).toBe("/artist/my-artist?from=album&fromSlug=test");
   });
 });

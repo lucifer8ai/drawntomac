@@ -169,7 +169,7 @@ export function AppHeader({
           return;
         }
         const { slug } = (await res.json()) as { slug: string };
-        navigate({ to: "/song/$slug" as never, params: { slug } as never }).catch(() => {
+        navigate({ to: "/song/$slug" as never, params: { slug } as never, search: { from: activeTab } as never }).catch(() => {
           window.location.href = `/song/${slug}`;
         });
       } else if (hit.category === "artist") {

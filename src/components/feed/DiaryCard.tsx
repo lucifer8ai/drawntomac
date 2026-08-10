@@ -22,6 +22,7 @@ export function DiaryCard({ data }: { data: DiaryCardData }) {
     <Link
       to="/song/$slug"
       params={{ slug: data.songSlug }}
+      search={{ from: "diary" }}
       className="block transition-colors hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
     >
       <div className="flex items-center gap-2 md:gap-3 border-b px-4 py-2.5 md:py-3">

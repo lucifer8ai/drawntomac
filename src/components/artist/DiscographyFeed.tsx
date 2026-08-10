@@ -12,7 +12,7 @@ interface DiscographySong {
   created_at: string;
 }
 
-export function DiscographyFeed({ songs }: { songs: DiscographySong[] }) {
+export function DiscographyFeed({ songs, from, fromSlug }: { songs: DiscographySong[]; from?: string; fromSlug?: string }) {
   const leadSongs = songs.filter((s) => s.role === "lead");
   const featuredSongs = songs.filter((s) => s.role === "featured");
 
@@ -32,6 +32,8 @@ export function DiscographyFeed({ songs }: { songs: DiscographySong[] }) {
                 slug={s.slug}
                 imageUrl={s.image_url}
                 subtitle={s.created_at ? new Date(s.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short" }) : undefined}
+                from={from}
+                fromSlug={fromSlug}
               />
             ))}
           </div>
@@ -52,6 +54,8 @@ export function DiscographyFeed({ songs }: { songs: DiscographySong[] }) {
                 slug={s.slug}
                 imageUrl={s.image_url}
                 subtitle={`w/ ${s.primary_artist_name}`}
+                from={from}
+                fromSlug={fromSlug}
               />
             ))}
           </div>

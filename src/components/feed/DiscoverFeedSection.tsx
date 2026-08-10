@@ -65,6 +65,7 @@ function ArtistSection({ artist, maxVisible = 5 }: { artist: ArtistAlbumFeed; ma
         <Link
           to="/artist/$slug"
           params={{ slug: artist.artistSlug }}
+          search={{ from: "feed" }}
           className="text-xs md:text-sm font-semibold text-foreground hover:opacity-80 transition-opacity"
           style={{ fontFamily: "DM Sans, sans-serif" }}
         >

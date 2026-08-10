@@ -20,6 +20,7 @@ import { Route as ArtistSlugRouteImport } from './routes/artist.$slug'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as ApiSearchRouteImport } from './routes/api/search'
 import { Route as ApiImportRouteImport } from './routes/api/import'
+import { Route as ApiArtistRequestsRouteImport } from './routes/api/artist-requests'
 import { Route as AlbumSlugRouteImport } from './routes/album.$slug'
 import { Route as AdminLogRouteImport } from './routes/admin/log'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
@@ -90,6 +91,11 @@ const ApiSearchRoute = ApiSearchRouteImport.update({
 const ApiImportRoute = ApiImportRouteImport.update({
   id: '/api/import',
   path: '/api/import',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiArtistRequestsRoute = ApiArtistRequestsRouteImport.update({
+  id: '/api/artist-requests',
+  path: '/api/artist-requests',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AlbumSlugRoute = AlbumSlugRouteImport.update({
@@ -189,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof AuthenticatedHomeRoute
   '/admin/log': typeof AdminLogRoute
   '/album/$slug': typeof AlbumSlugRoute
+  '/api/artist-requests': typeof ApiArtistRequestsRoute
   '/api/import': typeof ApiImportRoute
   '/api/search': typeof ApiSearchRoute
   '/api/upload': typeof ApiUploadRoute
@@ -217,6 +224,7 @@ export interface FileRoutesByTo {
   '/home': typeof AuthenticatedHomeRoute
   '/admin/log': typeof AdminLogRoute
   '/album/$slug': typeof AlbumSlugRoute
+  '/api/artist-requests': typeof ApiArtistRequestsRoute
   '/api/import': typeof ApiImportRoute
   '/api/search': typeof ApiSearchRoute
   '/api/upload': typeof ApiUploadRoute
@@ -248,6 +256,7 @@ export interface FileRoutesById {
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/admin/log': typeof AdminLogRoute
   '/album/$slug': typeof AlbumSlugRoute
+  '/api/artist-requests': typeof ApiArtistRequestsRoute
   '/api/import': typeof ApiImportRoute
   '/api/search': typeof ApiSearchRoute
   '/api/upload': typeof ApiUploadRoute
@@ -279,6 +288,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/admin/log'
     | '/album/$slug'
+    | '/api/artist-requests'
     | '/api/import'
     | '/api/search'
     | '/api/upload'
@@ -307,6 +317,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/admin/log'
     | '/album/$slug'
+    | '/api/artist-requests'
     | '/api/import'
     | '/api/search'
     | '/api/upload'
@@ -337,6 +348,7 @@ export interface FileRouteTypes {
     | '/_authenticated/home'
     | '/admin/log'
     | '/album/$slug'
+    | '/api/artist-requests'
     | '/api/import'
     | '/api/search'
     | '/api/upload'
@@ -366,6 +378,7 @@ export interface RootRouteChildren {
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
   AlbumSlugRoute: typeof AlbumSlugRoute
+  ApiArtistRequestsRoute: typeof ApiArtistRequestsRoute
   ApiImportRoute: typeof ApiImportRoute
   ApiSearchRoute: typeof ApiSearchRoute
   ApiUploadRoute: typeof ApiUploadRoute
@@ -457,6 +470,13 @@ declare module '@tanstack/react-router' {
       path: '/api/import'
       fullPath: '/api/import'
       preLoaderRoute: typeof ApiImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/artist-requests': {
+      id: '/api/artist-requests'
+      path: '/api/artist-requests'
+      fullPath: '/api/artist-requests'
+      preLoaderRoute: typeof ApiArtistRequestsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/album/$slug': {
@@ -628,6 +648,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRouteRoute: AdminRouteRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
   AlbumSlugRoute: AlbumSlugRoute,
+  ApiArtistRequestsRoute: ApiArtistRequestsRoute,
   ApiImportRoute: ApiImportRoute,
   ApiSearchRoute: ApiSearchRoute,
   ApiUploadRoute: ApiUploadRoute,

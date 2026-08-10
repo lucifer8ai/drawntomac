@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, Share2, Pencil } from "lucide-react";
 import { slugifyBase } from "@/lib/slugify";
+import { resolveBackURL } from "@/lib/navigation";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/lib/types";
@@ -98,7 +99,8 @@ export const Route = createFileRoute("/song/$slug")({
   ),
 });
 
-function Shell({ children, onShare }: { children: React.ReactNode; onShare?: () => void }) {
+function Shell({ children, onShare, from, fromSlug }: { children: React.ReactNode; onShare?: () => void; from?: string; fromSlug?: string }) {
+  const backURL = resolveBackURL(from, fromSlug);
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur-xl">
@@ -117,7 +119,7 @@ function Shell({ children, onShare }: { children: React.ReactNode; onShare?: () 
                 <Share2 size={16} />
               </button>
             )}
-            <Link to="/home" className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+            <Link {...backURL} className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
               <ArrowLeft size={16} />
               Back
             </Link>
@@ -150,6 +152,10 @@ function ReviewSkeletons() {
 
 function SongPage() {
   const { song, songArtists, artworkUrl } = Route.useLoaderData() as LoaderData;
+  const router = useRouter();
+  const search = router.state.location.search as Record<string, unknown>;
+  const from = search.from as string | undefined;
+  const fromSlug = search.fromSlug as string | undefined;
 
   const [userId, setUserId] = useState<string | null>(null);
   const [reviews, setReviews] = useState<ReviewEntry[]>([]);
@@ -315,7 +321,7 @@ function SongPage() {
   };
 
   return (
-    <Shell onShare={handleShare}>
+    <Shell onShare={handleShare} from={from} fromSlug={fromSlug}>
       <div className="absolute left-[-9999px] top-0" aria-hidden="true">
         <SongShareCard
           ref={cardRef as React.Ref<HTMLDivElement>}
