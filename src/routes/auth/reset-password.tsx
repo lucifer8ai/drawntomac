@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "sonner";
 import { validateResetPassword } from "@/lib/auth";
 
@@ -111,9 +112,8 @@ function ResetPassword() {
           >
             New password
           </label>
-          <input
+          <PasswordInput
             id="new-password"
-            type="password"
             required
             minLength={6}
             value={password}
@@ -130,9 +130,8 @@ function ResetPassword() {
           >
             Confirm new password
           </label>
-          <input
+          <PasswordInput
             id="confirm-password"
-            type="password"
             required
             minLength={6}
             value={confirm}

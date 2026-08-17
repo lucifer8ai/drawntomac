@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Input } from "@/components/ui/input";
+import { createEphemeralSupabaseClient } from "@/integrations/supabase/client-no-persist";
+import { Input, inputBaseClassName } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,
@@ -9,12 +11,15 @@ import {
 } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { validateResetPassword, passwordSignIn } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 
 export function AccountSettings() {
   const [emailOpen, setEmailOpen] = useState(false);
   const [passOpen, setPassOpen] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [currentEmail, setCurrentEmail] = useState("");
+  const [currentPass, setCurrentPass] = useState("");
   const [newPass, setNewPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
   const [emailSaving, setEmailSaving] = useState(false);
@@ -33,27 +38,57 @@ export function AccountSettings() {
       if (error) throw error;
       toast.success("Check your new email to confirm the change.");
       setNewEmail("");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Failed to change email.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to change email.");
     } finally {
       setEmailSaving(false);
     }
   }
 
   async function handlePassChange() {
-    if (!newPass || newPass !== confirmPass) {
-      toast.error("Passwords do not match.");
+    if (!currentPass) {
+      toast.error("Enter your current password.");
       return;
     }
+
+    const validationError = validateResetPassword(newPass, confirmPass);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
+    if (newPass === currentPass) {
+      toast.error("New password must be different from your current password.");
+      return;
+    }
+
     setPassSaving(true);
     try {
+      const { data } = await supabase.auth.getUser();
+      const email = data.user?.email;
+      if (!email) {
+        toast.error("Cannot verify current password.");
+        return;
+      }
+
+      const ephemeral = createEphemeralSupabaseClient();
+      const result = await passwordSignIn(ephemeral, email, currentPass);
+      if ("error" in result) {
+        toast.error("Current password is incorrect.");
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({ password: newPass });
       if (error) throw error;
+
       toast.success("Password changed.");
+      setCurrentPass("");
       setNewPass("");
       setConfirmPass("");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Failed to change password.");
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Failed to change password.",
+      );
     } finally {
       setPassSaving(false);
     }
@@ -105,24 +140,31 @@ export function AccountSettings() {
           Change Password
         </CollapsibleTrigger>
         <CollapsibleContent className="space-y-3 pt-2">
-          <Input
-            type="password"
+          <PasswordInput
+            value={currentPass}
+            onChange={(e) => setCurrentPass(e.target.value)}
+            placeholder="Current password"
+            autoComplete="current-password"
+            className={cn(inputBaseClassName, "h-11 rounded-lg")}
+          />
+          <PasswordInput
             value={newPass}
             onChange={(e) => setNewPass(e.target.value)}
             placeholder="New password"
-            className="h-11 rounded-lg"
+            autoComplete="new-password"
+            className={cn(inputBaseClassName, "h-11 rounded-lg")}
           />
-          <Input
-            type="password"
+          <PasswordInput
             value={confirmPass}
             onChange={(e) => setConfirmPass(e.target.value)}
             placeholder="Confirm new password"
-            className="h-11 rounded-lg"
+            autoComplete="new-password"
+            className={cn(inputBaseClassName, "h-11 rounded-lg")}
           />
           <Button
             variant="secondary"
             onClick={handlePassChange}
-            disabled={passSaving || !newPass || !confirmPass}
+            disabled={passSaving || !currentPass || !newPass || !confirmPass}
             className="rounded-lg w-full"
           >
             {passSaving ? "Saving..." : "Change Password"}

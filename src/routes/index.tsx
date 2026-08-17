@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "sonner";
 import signBg from "../../picture/Untitled - 11 July 2026 at 08.54.03.png";
 
@@ -251,9 +252,8 @@ function AuthForm() {
           <label htmlFor="password" className="text-xs font-medium text-muted-foreground">
             Password
           </label>
-          <input
+          <PasswordInput
             id="password"
-            type="password"
             required
             minLength={6}
             value={password}
