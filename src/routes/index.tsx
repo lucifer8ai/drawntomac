@@ -136,26 +136,61 @@ function AuthForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
   const navigate = useNavigate();
+
+  async function establishSession(body: {
+    session: { access_token: string; refresh_token: string };
+  }) {
+    const { error } = await supabase.auth.setSession({
+      access_token: body.session.access_token,
+      refresh_token: body.session.refresh_token,
+    });
+    if (error) {
+      toast.error("Signed in but could not start your session. Please try again.");
+      return;
+    }
+    navigate({ to: "/home" });
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
     try {
-      if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) toast.error(error.message);
-        else navigate({ to: "/home" });
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin + "/home" },
-        });
-        if (error) toast.error(error.message);
-        else toast.success("Check your email to confirm your account.");
+      const endpoint = mode === "signin" ? "/api/auth/signin" : "/api/auth/signup";
+      const payload = mode === "signin" ? { identifier: email, password } : { email, password };
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(body.error ?? "Something went wrong.");
+        return;
       }
+
+      await establishSession(body);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleForgot() {
+    if (busy || !forgotEmail) return;
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: window.location.origin + "/auth/reset-password",
+      });
+      if (error) toast.error(error.message);
+      else toast.success("If an account exists, a reset link was sent.");
+      setForgotOpen(false);
+      setForgotEmail("");
     } finally {
       setBusy(false);
     }
@@ -199,16 +234,16 @@ function AuthForm() {
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="space-y-1.5">
           <label htmlFor="email" className="text-xs font-medium text-muted-foreground">
-            Email
+            {mode === "signin" ? "Email or username" : "Email"}
           </label>
           <input
             id="email"
-            type="email"
-            autoComplete="email"
+            type={mode === "signin" ? "text" : "email"}
+            autoComplete={mode === "signin" ? "username" : "email"}
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email Address"
+            placeholder={mode === "signin" ? "Email or username" : "Email Address"}
             className="w-full rounded-xl border bg-input/40 px-4 py-3 text-base text-foreground outline-none placeholder:text-muted-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
           />
         </div>
@@ -227,7 +262,43 @@ function AuthForm() {
             placeholder="••••••••"
             className="w-full rounded-xl border bg-input/40 px-4 py-3 text-base text-foreground outline-none placeholder:text-muted-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
           />
+          {mode === "signin" && (
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() => setForgotOpen((v) => !v)}
+                className="text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                Forgot password?
+              </button>
+            </div>
+          )}
         </div>
+
+        {forgotOpen && mode === "signin" && (
+          <div className="space-y-2 rounded-xl border bg-input/20 p-3">
+            <label htmlFor="forgot-email" className="text-xs font-medium text-muted-foreground">
+              Email for reset link
+            </label>
+            <input
+              id="forgot-email"
+              type="email"
+              required
+              value={forgotEmail}
+              onChange={(e) => setForgotEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="w-full rounded-lg border bg-input/40 px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+            <button
+              type="button"
+              onClick={handleForgot}
+              disabled={busy || !forgotEmail}
+              className="w-full rounded-lg bg-secondary py-2 text-sm font-semibold text-secondary-foreground disabled:opacity-60"
+            >
+              Send reset link
+            </button>
+          </div>
+        )}
 
         <button
           type="submit"

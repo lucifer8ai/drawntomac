@@ -15,6 +15,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as SongSlugRouteImport } from './routes/song.$slug'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as ArtistSlugRouteImport } from './routes/artist.$slug'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
@@ -27,6 +28,8 @@ import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/h
 import { Route as AdminSongsIndexRouteImport } from './routes/admin/songs/index'
 import { Route as AdminArtistsIndexRouteImport } from './routes/admin/artists/index'
 import { Route as AdminAlbumsIndexRouteImport } from './routes/admin/albums/index'
+import { Route as ApiAuthSignupRouteImport } from './routes/api/auth/signup'
+import { Route as ApiAuthSigninRouteImport } from './routes/api/auth/signin'
 import { Route as ApiAdminUploadArtworkRouteImport } from './routes/api/admin/upload-artwork'
 import { Route as ApiAdminUpdateSongArtistsRouteImport } from './routes/api/admin/update-song-artists'
 import { Route as ApiAdminUpdateSongRouteImport } from './routes/api/admin/update-song'
@@ -66,6 +69,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const SongSlugRoute = SongSlugRouteImport.update({
   id: '/song/$slug',
   path: '/song/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/auth/reset-password',
+  path: '/auth/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
@@ -127,6 +135,16 @@ const AdminAlbumsIndexRoute = AdminAlbumsIndexRouteImport.update({
   id: '/albums/',
   path: '/albums/',
   getParentRoute: () => AdminRouteRoute,
+} as any)
+const ApiAuthSignupRoute = ApiAuthSignupRouteImport.update({
+  id: '/api/auth/signup',
+  path: '/api/auth/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSigninRoute = ApiAuthSigninRouteImport.update({
+  id: '/api/auth/signin',
+  path: '/api/auth/signin',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAdminUploadArtworkRoute = ApiAdminUploadArtworkRouteImport.update({
   id: '/api/admin/upload-artwork',
@@ -201,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/api/upload': typeof ApiUploadRoute
   '/artist/$slug': typeof ArtistSlugRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/song/$slug': typeof SongSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/connect/$username': typeof AuthenticatedConnectUsernameRoute
@@ -214,6 +233,8 @@ export interface FileRoutesByFullPath {
   '/api/admin/update-song': typeof ApiAdminUpdateSongRoute
   '/api/admin/update-song-artists': typeof ApiAdminUpdateSongArtistsRoute
   '/api/admin/upload-artwork': typeof ApiAdminUploadArtworkRoute
+  '/api/auth/signin': typeof ApiAuthSigninRoute
+  '/api/auth/signup': typeof ApiAuthSignupRoute
   '/admin/albums/': typeof AdminAlbumsIndexRoute
   '/admin/artists/': typeof AdminArtistsIndexRoute
   '/admin/songs/': typeof AdminSongsIndexRoute
@@ -230,6 +251,7 @@ export interface FileRoutesByTo {
   '/api/upload': typeof ApiUploadRoute
   '/artist/$slug': typeof ArtistSlugRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/song/$slug': typeof SongSlugRoute
   '/admin': typeof AdminIndexRoute
   '/connect/$username': typeof AuthenticatedConnectUsernameRoute
@@ -243,6 +265,8 @@ export interface FileRoutesByTo {
   '/api/admin/update-song': typeof ApiAdminUpdateSongRoute
   '/api/admin/update-song-artists': typeof ApiAdminUpdateSongArtistsRoute
   '/api/admin/upload-artwork': typeof ApiAdminUploadArtworkRoute
+  '/api/auth/signin': typeof ApiAuthSigninRoute
+  '/api/auth/signup': typeof ApiAuthSignupRoute
   '/admin/albums': typeof AdminAlbumsIndexRoute
   '/admin/artists': typeof AdminArtistsIndexRoute
   '/admin/songs': typeof AdminSongsIndexRoute
@@ -262,6 +286,7 @@ export interface FileRoutesById {
   '/api/upload': typeof ApiUploadRoute
   '/artist/$slug': typeof ArtistSlugRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/song/$slug': typeof SongSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/_authenticated/connect/$username': typeof AuthenticatedConnectUsernameRoute
@@ -275,6 +300,8 @@ export interface FileRoutesById {
   '/api/admin/update-song': typeof ApiAdminUpdateSongRoute
   '/api/admin/update-song-artists': typeof ApiAdminUpdateSongArtistsRoute
   '/api/admin/upload-artwork': typeof ApiAdminUploadArtworkRoute
+  '/api/auth/signin': typeof ApiAuthSigninRoute
+  '/api/auth/signup': typeof ApiAuthSignupRoute
   '/admin/albums/': typeof AdminAlbumsIndexRoute
   '/admin/artists/': typeof AdminArtistsIndexRoute
   '/admin/songs/': typeof AdminSongsIndexRoute
@@ -294,6 +321,7 @@ export interface FileRouteTypes {
     | '/api/upload'
     | '/artist/$slug'
     | '/auth/callback'
+    | '/auth/reset-password'
     | '/song/$slug'
     | '/admin/'
     | '/connect/$username'
@@ -307,6 +335,8 @@ export interface FileRouteTypes {
     | '/api/admin/update-song'
     | '/api/admin/update-song-artists'
     | '/api/admin/upload-artwork'
+    | '/api/auth/signin'
+    | '/api/auth/signup'
     | '/admin/albums/'
     | '/admin/artists/'
     | '/admin/songs/'
@@ -323,6 +353,7 @@ export interface FileRouteTypes {
     | '/api/upload'
     | '/artist/$slug'
     | '/auth/callback'
+    | '/auth/reset-password'
     | '/song/$slug'
     | '/admin'
     | '/connect/$username'
@@ -336,6 +367,8 @@ export interface FileRouteTypes {
     | '/api/admin/update-song'
     | '/api/admin/update-song-artists'
     | '/api/admin/upload-artwork'
+    | '/api/auth/signin'
+    | '/api/auth/signup'
     | '/admin/albums'
     | '/admin/artists'
     | '/admin/songs'
@@ -354,6 +387,7 @@ export interface FileRouteTypes {
     | '/api/upload'
     | '/artist/$slug'
     | '/auth/callback'
+    | '/auth/reset-password'
     | '/song/$slug'
     | '/admin/'
     | '/_authenticated/connect/$username'
@@ -367,6 +401,8 @@ export interface FileRouteTypes {
     | '/api/admin/update-song'
     | '/api/admin/update-song-artists'
     | '/api/admin/upload-artwork'
+    | '/api/auth/signin'
+    | '/api/auth/signup'
     | '/admin/albums/'
     | '/admin/artists/'
     | '/admin/songs/'
@@ -384,6 +420,7 @@ export interface RootRouteChildren {
   ApiUploadRoute: typeof ApiUploadRoute
   ArtistSlugRoute: typeof ArtistSlugRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   SongSlugRoute: typeof SongSlugRoute
   ApiAdminSearchEntitiesRoute: typeof ApiAdminSearchEntitiesRoute
   ApiAdminUpdateArtistRoute: typeof ApiAdminUpdateArtistRoute
@@ -391,6 +428,8 @@ export interface RootRouteChildren {
   ApiAdminUpdateSongRoute: typeof ApiAdminUpdateSongRoute
   ApiAdminUpdateSongArtistsRoute: typeof ApiAdminUpdateSongArtistsRoute
   ApiAdminUploadArtworkRoute: typeof ApiAdminUploadArtworkRoute
+  ApiAuthSigninRoute: typeof ApiAuthSigninRoute
+  ApiAuthSignupRoute: typeof ApiAuthSignupRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -435,6 +474,13 @@ declare module '@tanstack/react-router' {
       path: '/song/$slug'
       fullPath: '/song/$slug'
       preLoaderRoute: typeof SongSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/auth/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
@@ -520,6 +566,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/albums/'
       preLoaderRoute: typeof AdminAlbumsIndexRouteImport
       parentRoute: typeof AdminRouteRoute
+    }
+    '/api/auth/signup': {
+      id: '/api/auth/signup'
+      path: '/api/auth/signup'
+      fullPath: '/api/auth/signup'
+      preLoaderRoute: typeof ApiAuthSignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/signin': {
+      id: '/api/auth/signin'
+      path: '/api/auth/signin'
+      fullPath: '/api/auth/signin'
+      preLoaderRoute: typeof ApiAuthSigninRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/admin/upload-artwork': {
       id: '/api/admin/upload-artwork'
@@ -654,6 +714,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiUploadRoute: ApiUploadRoute,
   ArtistSlugRoute: ArtistSlugRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
   SongSlugRoute: SongSlugRoute,
   ApiAdminSearchEntitiesRoute: ApiAdminSearchEntitiesRoute,
   ApiAdminUpdateArtistRoute: ApiAdminUpdateArtistRoute,
@@ -661,6 +722,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminUpdateSongRoute: ApiAdminUpdateSongRoute,
   ApiAdminUpdateSongArtistsRoute: ApiAdminUpdateSongArtistsRoute,
   ApiAdminUploadArtworkRoute: ApiAdminUploadArtworkRoute,
+  ApiAuthSigninRoute: ApiAuthSigninRoute,
+  ApiAuthSignupRoute: ApiAuthSignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
