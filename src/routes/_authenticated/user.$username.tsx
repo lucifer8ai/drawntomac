@@ -18,5 +18,5 @@ function UserProfilePage() {
     });
   }, []);
 
-  return <PublicProfile username={username} viewerId={viewerId} />;
+  return <PublicProfile key={username} username={username} viewerId={viewerId} />;
 }

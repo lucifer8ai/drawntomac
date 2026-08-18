@@ -121,7 +121,7 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
       toast.error(`Couldn't follow @${profile.username}. Try again.`);
       const { data: refetch } = await supabase
         .from("follows")
-        .select("id")
+        .select("following_id")
         .eq("follower_id", viewerId)
         .eq("following_id", profile.id)
         .maybeSingle();

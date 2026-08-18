@@ -63,7 +63,7 @@ const mockProfile = {
   city: "Brooklyn",
 };
 
-function setupSupabaseResponse(overrides: Record<string, any> = {}) {
+function setupSupabaseResponse(overrides: Record<string, any> = {}, followStatus: any = null) {
   const base = { ...mockProfile, ...overrides };
 
   const chain: Record<string, any> = {
@@ -80,7 +80,7 @@ function setupSupabaseResponse(overrides: Record<string, any> = {}) {
       const followsMock: any = {
         select: vi.fn(() => followsMock),
         eq: vi.fn(() => followsMock),
-        maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })),
+        maybeSingle: vi.fn(() => Promise.resolve({ data: followStatus, error: null })),
         in: vi.fn(() => Promise.resolve({ data: [], error: null })),
       };
       return followsMock;
@@ -167,6 +167,26 @@ describe("PublicProfile", () => {
 
   it("shows follow button for other users", async () => {
     setupSupabaseResponse();
+
+    render(<PublicProfile username="alice" viewerId="viewer-1" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Follow @alice/ })).toBeTruthy();
+    });
+  });
+
+  it("shows following button when the viewer already follows the profile", async () => {
+    setupSupabaseResponse({}, { following_id: "profile-1" });
+
+    render(<PublicProfile username="alice" viewerId="viewer-1" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Unfollow @alice/ })).toBeTruthy();
+    });
+  });
+
+  it("shows follow button when no follow row exists", async () => {
+    setupSupabaseResponse({}, null);
 
     render(<PublicProfile username="alice" viewerId="viewer-1" />);
 
