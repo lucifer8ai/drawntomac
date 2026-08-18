@@ -53,6 +53,9 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
     if (!username) return;
     setLoading(true);
     setError(null);
+    setIsFollowing(false);
+    setFollowingCount(0);
+    setFollowerCount(0);
 
     supabase
       .from("profiles")
@@ -71,7 +74,7 @@ export function PublicProfile({ username, viewerId }: PublicProfileProps) {
 
         if (viewerId && profileData.id !== viewerId) {
           const [followResult, countsResult] = await Promise.all([
-            supabase.from("follows").select("id").eq("follower_id", viewerId).eq("following_id", profileData.id).maybeSingle(),
+            supabase.from("follows").select("following_id").eq("follower_id", viewerId).eq("following_id", profileData.id).maybeSingle(),
             Promise.all([
               supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", profileData.id),
               supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", profileData.id),
