@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../../src/lib/types";
 import {
   extractClientIp,
+  isUserAdmin,
   normalizeIdentifier,
   passwordSignIn,
   resolveUserEmail,
@@ -107,6 +108,42 @@ describe("extractClientIp", () => {
   it("falls back to unknown", () => {
     const request = new Request("http://localhost");
     expect(extractClientIp(request)).toBe("unknown");
+  });
+});
+
+describe("isUserAdmin", () => {
+  const mockFrom = vi.fn();
+  const admin = {
+    from: mockFrom,
+  } as unknown as SupabaseClient<Database>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function mockProfileResult(data: { is_admin: boolean } | null) {
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data, error: null }),
+        }),
+      }),
+    });
+  }
+
+  it("returns true when profile is admin", async () => {
+    mockProfileResult({ is_admin: true });
+    await expect(isUserAdmin(admin, "u1")).resolves.toBe(true);
+  });
+
+  it("returns false when profile is not admin", async () => {
+    mockProfileResult({ is_admin: false });
+    await expect(isUserAdmin(admin, "u1")).resolves.toBe(false);
+  });
+
+  it("returns false when profile does not exist", async () => {
+    mockProfileResult(null);
+    await expect(isUserAdmin(admin, "u1")).resolves.toBe(false);
   });
 });
 

@@ -132,8 +132,12 @@ function ListenerWall() {
 
 // --- Auth Form ---
 
-function AuthForm() {
-  const [mode, setMode] = useState<"signup" | "signin">("signup");
+function AuthForm({
+  onNavIntent,
+}: {
+  onNavIntent: (destination: "/home" | "/admin") => void;
+}) {
+  const [mode, setMode] = useState<"signup" | "signin" | "admin">("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -141,9 +145,13 @@ function AuthForm() {
   const [forgotEmail, setForgotEmail] = useState("");
   const navigate = useNavigate();
 
-  async function establishSession(body: {
-    session: { access_token: string; refresh_token: string };
-  }) {
+  async function establishSession(
+    body: {
+      session: { access_token: string; refresh_token: string };
+    },
+    destination: "/home" | "/admin",
+  ) {
+    onNavIntent(destination);
     const { error } = await supabase.auth.setSession({
       access_token: body.session.access_token,
       refresh_token: body.session.refresh_token,
@@ -152,7 +160,7 @@ function AuthForm() {
       toast.error("Signed in but could not start your session. Please try again.");
       return;
     }
-    navigate({ to: "/home" });
+    navigate({ to: destination });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -160,8 +168,15 @@ function AuthForm() {
     if (busy) return;
     setBusy(true);
     try {
-      const endpoint = mode === "signin" ? "/api/auth/signin" : "/api/auth/signup";
-      const payload = mode === "signin" ? { identifier: email, password } : { email, password };
+      const endpoint = mode === "signin" || mode === "admin"
+        ? "/api/auth/signin"
+        : "/api/auth/signup";
+      const payload = mode === "signin"
+        ? { identifier: email, password }
+        : mode === "admin"
+          ? { identifier: email, password, adminOnly: true }
+          : { email, password };
+      const destination = mode === "admin" ? "/admin" : "/home";
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -175,7 +190,7 @@ function AuthForm() {
         return;
       }
 
-      await establishSession(body);
+      await establishSession(body, destination);
     } finally {
       setBusy(false);
     }
@@ -213,8 +228,8 @@ function AuthForm() {
 
   return (
     <>
-      <div className="mb-8 grid grid-cols-2 rounded-lg bg-input p-1">
-        {(["signup", "signin"] as const).map((opt) => (
+      <div className="mb-8 grid grid-cols-3 rounded-lg bg-input p-1">
+        {(["signup", "signin", "admin"] as const).map((opt) => (
           <button
             type="button"
             key={opt}
@@ -227,7 +242,7 @@ function AuthForm() {
                   : "bg-transparent text-foreground/60 hover:text-foreground"
               }`}
           >
-            {opt === "signup" ? "Sign up" : "Sign in"}
+            {opt === "signup" ? "Sign up" : opt === "signin" ? "Sign in" : "Admin"}
           </button>
         ))}
       </div>
@@ -235,16 +250,16 @@ function AuthForm() {
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="space-y-1.5">
           <label htmlFor="email" className="text-xs font-medium text-muted-foreground">
-            {mode === "signin" ? "Email or username" : "Email"}
+            {mode === "signup" ? "Email" : "Email or username"}
           </label>
           <input
             id="email"
-            type={mode === "signin" ? "text" : "email"}
-            autoComplete={mode === "signin" ? "username" : "email"}
+            type={mode === "signup" ? "email" : "text"}
+            autoComplete={mode === "signup" ? "email" : "username"}
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder={mode === "signin" ? "Email or username" : "Email Address"}
+            placeholder={mode === "signup" ? "Email Address" : "Email or username"}
             className="w-full rounded-xl border bg-input/40 px-4 py-3 text-base text-foreground outline-none placeholder:text-muted-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
           />
         </div>
@@ -305,7 +320,7 @@ function AuthForm() {
           disabled={busy}
           className="mt-2 w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {busy ? "Hang tight…" : mode === "signin" ? "Come in" : "Join the wall"}
+          {busy ? "Hang tight…" : mode === "signin" ? "Come in" : mode === "admin" ? "Enter admin" : "Join the wall"}
         </button>
 
         <div className="flex items-center gap-3 py-1">
@@ -335,6 +350,7 @@ function AuthPage() {
   const [checking, setChecking] = useState(true);
   const [imageState, setImageState] = useState<"loading" | "loaded" | "error">("loading");
   const imageRef = useRef<HTMLImageElement>(null);
+  const navIntent = useRef<"/home" | "/admin">("/home");
 
   useEffect(() => {
     const img = new Image();
@@ -363,7 +379,9 @@ function AuthPage() {
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
-        navigate({ to: "/home" });
+        const dest = navIntent.current;
+        navIntent.current = "/home";
+        navigate({ to: dest });
       }
     });
     return () => {
@@ -467,7 +485,11 @@ function AuthPage() {
                    max-md:border-transparent max-md:border-t max-md:pb-10
                    shadow-2xl shadow-black/20"
       >
-        <AuthForm />
+        <AuthForm
+          onNavIntent={(destination) => {
+            navIntent.current = destination;
+          }}
+        />
       </div>
 
 

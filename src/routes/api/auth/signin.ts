@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import {
   extractClientIp,
+  isUserAdmin,
   normalizeIdentifier,
   passwordSignIn,
   resolveUserEmail,
@@ -12,6 +13,7 @@ import { checkRateLimit } from "@/lib/rate-limiter";
 const bodySchema = z.object({
   identifier: z.string().min(1).max(320),
   password: z.string().min(1).max(72),
+  adminOnly: z.boolean().optional(),
 });
 
 export const Route = createFileRoute("/api/auth/signin")({
@@ -33,7 +35,7 @@ export const Route = createFileRoute("/api/auth/signin")({
           );
         }
 
-        const { identifier, password } = parsed.data;
+        const { identifier, password, adminOnly } = parsed.data;
         const validationError = validateSigninInput(identifier, password);
         if (validationError) {
           return Response.json(
@@ -87,6 +89,18 @@ export const Route = createFileRoute("/api/auth/signin")({
         );
         if ("error" in result) {
           return Response.json({ error: result.error }, { status: 400 });
+        }
+
+        if (adminOnly) {
+          const { supabaseAdmin } =
+            await import("@/integrations/supabase/client.server");
+          const isAdmin = await isUserAdmin(supabaseAdmin, result.user.id);
+          if (!isAdmin) {
+            return Response.json(
+              { error: "This account isn't an admin." },
+              { status: 403 },
+            );
+          }
         }
 
         return Response.json({ session: result.session, user: result.user });

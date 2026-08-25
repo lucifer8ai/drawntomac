@@ -91,6 +91,19 @@ export async function resolveUserEmail(
   return { email: data.user.email };
 }
 
+export async function isUserAdmin(
+  admin: SupabaseClient<Database>,
+  userId: string,
+): Promise<boolean> {
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", userId)
+    .maybeSingle();
+
+  return profile?.is_admin === true;
+}
+
 export async function passwordSignIn(
   anonClient: SupabaseClient<Database>,
   email: string,

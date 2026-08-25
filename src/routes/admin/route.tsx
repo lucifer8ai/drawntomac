@@ -13,8 +13,8 @@ export const Route = createFileRoute("/admin")({
       .eq("id", data.user.id)
       .maybeSingle();
 
-    if (!profile?.onboarding_completed) throw redirect({ to: "/onboarding" });
     if (!profile?.is_admin) throw redirect({ to: "/home" });
+    if (!profile?.onboarding_completed) throw redirect({ to: "/onboarding" });
   },
   component: AdminLayout,
 });
